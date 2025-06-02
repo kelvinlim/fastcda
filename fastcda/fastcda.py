@@ -239,7 +239,7 @@ class FastCDA():
         # first lets check which os we are on
         if os.name == 'nt':  # Windows
             # get the AppData directory
-            appdata_dir = os.getenv('APPDATA')
+            appdata_dir = os.getenv('LOCALAPPDATA')
             config_file = os.path.join(appdata_dir, 'fastcda', 'fastcda.yaml')
         else:  # macOS/Linux
             # get the home directory
