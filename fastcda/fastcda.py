@@ -257,44 +257,7 @@ class FastCDA():
                 # add to path
                 os.environ['PATH'] = f"{current_path}{os.pathsep}{graphviz_bin}"
                 
-            
-            
-    def loadPaths2(self):
-        """
-        Load the paths from ~/.tetradrc
-        
-        JAVA_HOME - location of JDK, e.g. /Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home
-        GRAPHVIZ_BIN - location of graphviz binary, 
-                        e.g. /opt/homebrew/bin
-        """
-        
-        tetradrc_file = ".tetradrc"
-        # set the PATH for java and graphviz
-        hostname = socket.gethostname() 
-        home_directory = Path.home()
-        # check if .javarc file exists in home directory
-        javaenv_path = os.path.join(home_directory, tetradrc_file)
-        if os.path.exists(javaenv_path):
-            # load the file
-            load_dotenv(dotenv_path=javaenv_path)
-            java_home = os.environ.get("JAVA_HOME")
-            java_path = f"{java_home}/bin"
-            current_path = os.environ.get('PATH')
-            # add this to PATH
-            os.environ['PATH'] = f"{current_path}{os.pathsep}{java_path}"
 
-            # add to path
-            graphviz_bin = os.environ.get("GRAPHVIZ_BIN")
-            os.environ['PATH'] = f"{current_path}{os.pathsep}{graphviz_bin}"
-            return True
-        else:
-            print(f"Unable to load configuration file {tetradrc_file} from your home directory.")
-            print("This file should contain two environment variables:")
-            print("JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home")
-            print("GRAPHVIZ_BIN=/opt/homebrew/bin")
-            raise ValueError(f"{tetradrc_file} not found.")
-        
-        return False
         
     def getEMAData(self) -> pd.DataFrame:
         """
