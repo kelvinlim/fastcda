@@ -72,12 +72,21 @@ class FastCDA():
         
         # check if we have graphviz dot on path
         graphviz_check, graphviz_version = self.check_graphviz_dot()
+        
+        exit_code = 0  # initialize exit code
+        
         if not graphviz_check:
-            raise ValueError("Graphviz 'dot' command is not found. Please install Graphviz and ensure it's in your PATH.")
-
+            print("Error: Graphviz 'dot' command is not found. Please install Graphviz and ensure it's in your PATH.")
+            exit_code += 1  # Increment exit code if Graphviz is not found
+            
         # check if we have correct Java version
         if not self.check_java_version(min_java_version=self.min_java_version):
-            raise ValueError(f"Java version must be {self.min_java_version} or higher. Please update your Java installation.")
+            print(f"Error: Java version must be {self.min_java_version} or higher. Please update your Java installation.")
+            exit_code += 1  # Increment exit code if Java version is not sufficient
+        
+        if exit_code > 0:
+            # exit if any errors were found
+            raise EnvironmentError(f"Exiting due to {exit_code} errors. Please resolve the issues and try again.")
         
         # only start if not already started
         if  not jpype.isJVMStarted():
