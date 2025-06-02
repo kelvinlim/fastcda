@@ -17,16 +17,25 @@ from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
 import semopy
+import yaml
 
 from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '5')
+__version_info__ = ('0', '1', '6')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.6 - change how configuration is done.  Eliminate the .tetradrc file.
+        Use a fastcda.yaml file instead containing these two variables:
+        
+        JAVA_HOME: /Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home   
+        GRAPHVIZ_BIN: /opt/homebrew/bin
+        
+        Only use the file if the default system paths are not sufficient.
+        
 0.1.5 - move to the FastCDA repository
 0.1.4 - add verbose message option in object init
         run_model_search now automatically does the sem and creates the
@@ -46,6 +55,7 @@ class FastCDA():
         # output about what is happening
         self.verbose = verbose
         
+        # check if a configuration file exists, then uses it
         res = self.loadPaths()
         
         self.min_java_version = min_java_version
@@ -185,8 +195,71 @@ class FastCDA():
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             return False, None
-          
+    
     def loadPaths(self):
+        """
+        Checks if a configuration file exists in the home directory for macos/linux 
+        and in %APPDATA% for windows.
+        
+        The yaml file should contain the following variables:
+    
+        JAVA_HOME and GRAPHVIZ_BIN
+        
+        For windows the file would be in the fastcda directory in the user's AppData folder.
+        The file is named fastcda.yaml and 
+        
+        For macos/linux the file is in the home directory and is named .fastcda.yaml
+        
+        """
+        
+        # first lets check which os we are on
+        if os.name == 'nt':  # Windows
+            # get the AppData directory
+            appdata_dir = os.getenv('APPDATA')
+            config_file = os.path.join(appdata_dir, 'fastcda', 'fastcda.yaml')
+        else:  # macOS/Linux
+            # get the home directory
+            home_directory = Path.home()
+            config_file = home_directory / '.fastcda.yaml'
+            
+        # check if the file exists
+        if os.path.exists(config_file):
+            # read in the yaml file
+            try: 
+                with open(config_file, 'r') as file:
+                    config = yaml.safe_load(file)
+            except:
+                raise ValueError(f"Unable to read configuration file {config_file}. Please check the file format.")
+
+            # check if JAVA_HOME exists in config
+            if 'JAVA_HOME' in config:
+                java_home = config['JAVA_HOME']
+                if not os.path.exists(java_home):
+                    raise ValueError(f"JAVA_HOME {java_home} does not exist. Please check the path.")
+                
+                # set the JAVA_HOME environment variable
+                os.environ['JAVA_HOME'] = java_home
+                
+                # add the java bin directory to the PATH
+                java_path = f"{java_home}/bin"
+                current_path = os.environ.get('PATH')
+                # add this to PATH
+                os.environ['PATH'] = f"{current_path}{os.pathsep}{java_path}"
+
+            # check if GRAPHVIZ_BIN exists in config
+            if 'GRAPHVIZ_BIN' in config:
+                graphviz_bin = config['GRAPHVIZ_BIN']
+                if not os.path.exists(graphviz_bin):
+                    raise ValueError(f"GRAPHVIZ_BIN {graphviz_bin} does not exist. Please check the path.")
+                
+                # add the graphviz bin directory to the PATH
+                current_path = os.environ.get('PATH')
+                # add to path
+                os.environ['PATH'] = f"{current_path}{os.pathsep}{graphviz_bin}"
+                
+            
+            
+    def loadPaths2(self):
         """
         Load the paths from ~/.tetradrc
         

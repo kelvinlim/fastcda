@@ -1,0 +1,11 @@
+# configuration file for FastCDA
+# This file is used to set environment variables and paths for the FastCDA application
+
+# JAVA_HOME is the path to the Java Development Kit (JDK)
+# Ensure that the JDK version is compatible with FastCDA
+JAVA_HOME: /Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home
+
+# graphviz is a graph visualization software used by FastCDA
+# Ensure that the Graphviz binaries are installed and the path is correct
+GRAPHVIZ_BIN: /opt/homebrew/bin
+

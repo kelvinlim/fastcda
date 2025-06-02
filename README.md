@@ -30,10 +30,8 @@ python -m venv .venv
 source .venv/bin/activate
 
 # Then install the necessary packages using pip
-# On Windows:
-pip install -r requirements_win11.txt
-# On macOS/Linux:
-pip install -r requirements.txt
+pip install fastcda
+
 ```
 
 ### 3. Sample usage
