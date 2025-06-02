@@ -18,6 +18,35 @@ You will need a JDK21 or higher version which can be downloaded from here: https
 
 You will also need the graphviz package which can be downloaded from here: https://graphviz.org/download/
 
+On initialization, FastCDA will check that it can find the
+needed java version and the graphviz dot program. If it is
+unable to find the necessary programs, it will complain and
+exit.
+
+If you have installed the packages in non standard locations, you
+can use a yaml configuration file to specify the locations.
+
+For linux/macos, the configuration file  should
+be in the home directory, e.g.  ~/.fastcda.yaml.  For Windows,
+the file should be placed in the Users home directory AppData\Local
+
+C:\Users\<YourUser>\AppData\Local
+
+Here is a sample yaml configuration file.
+
+```
+# configuration file for FastCDA
+# This file is used to set environment variables and paths for the FastCDA application
+
+# JAVA_HOME is the path to the Java Development Kit (JDK)
+# Ensure that the JDK version is compatible with FastCDA
+JAVA_HOME: /Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home
+
+# graphviz is a graph visualization software used by FastCDA
+# Ensure that the Graphviz binaries are installed and the path is correct
+GRAPHVIZ_BIN: /opt/homebrew/bin
+```
+
 ### 2. Create a python virtual environment
 
 ```
@@ -37,6 +66,7 @@ pip install fastcda
 ### 3. Sample usage
 
 a. Load the packages and create an instance of FastCDA
+
 ```
 from fastcda import FastCDA
 from dgraph_flex import DgraphFlex
@@ -48,6 +78,7 @@ fc = FastCDA()
 ```
 
 b. Read in the built in sample ema dataset
+
 ```
 # read in the sample data set in to a dataframe
 df = fc.getEMAData()
@@ -61,6 +92,7 @@ df_lag_std = fc.standardize_df_cols(df_lag)
 ```
 
 c. Create the prior knowledge content
+
 ```
 # Create the knowledge prior content for temporal
 # order. The lag variables can only be parents of the non
@@ -83,6 +115,7 @@ knowledge = {'addtemporal': {
                             }
             }
 ```
+
 d. Run the search
 
 ```
@@ -100,4 +133,5 @@ e. Show the causal graph
 ```
 graph.show_graph()
 ```
+
 ![Example Graph](https://github.com/kelvinlim/fastcda/blob/main/assets/causal_graph_boston.png)
