@@ -18,7 +18,7 @@ You will need a JDK21 or higher version which can be downloaded from here: https
 
 You will also need the graphviz package which can be downloaded from here: https://graphviz.org/download/
 
-### 1. Create a python virtual environment
+### 2. Create a python virtual environment
 
 ```
 python -m venv .venv
@@ -36,7 +36,7 @@ pip install -r requirements_win11.txt
 pip install -r requirements.txt
 ```
 
-### 2. Sample usage
+### 3. Sample usage
 
 a. Load the packages and create an instance of FastCDA
 ```
@@ -49,7 +49,7 @@ import pprint as pp
 fc = FastCDA()
 ```
 
-b. Read in the sample ema dataset
+b. Read in the built in sample ema dataset
 ```
 # read in the sample data set in to a dataframe
 df = fc.getEMAData()
@@ -63,7 +63,7 @@ df_lag_std = fc.standardize_df_cols(df_lag)
 ```
 
 c. Create the prior knowledge content
-```json
+```
 # Create the knowledge prior content for temporal
 # order. The lag variables can only be parents of the non
 # lag variables
