@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fastcda"
+version = "0.1.5"
+authors = [
+  { name = "Kelvin O. Lim", email = "lim.kelvino@gmail.com" },
+]
+description = "A package of tools for working with the tetrad java program for causal discovery from CMU"
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+# This is the correct way to list runtime dependencies directly under [project]
+dependencies = [
+    "JPype1",
+    "pandas",
+    "python-dotenv",
+    "PyYAML",
+    "seaborn",
+    "semopy",
+    "graphviz",
+    "tqdm",
+    "ipykernel",
+    "dgraph_flex",
+    "ipywidgets",
+    "scikit-learn",
+    "ipython",
+    "ipykernel",
+    "matplotlib",
+
+]
+
+[project.urls]
+"Homepage" = "https://github.com/kelvinlim/fastcda"
+"Bug Tracker" = "https://github.com/kelvinlim/fastcda/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["fastcda*"]
+
+[tool.setuptools.package-data]
+"fastcda" = ["jars/*.jar","data/*.csv","data/*.txt"]
