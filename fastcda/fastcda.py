@@ -49,7 +49,17 @@ class FastCDA():
     
     def __init__(self, 
                  verbose: int = 1,
-                 min_java_version: int = 21):
+                 min_java_version: int = 21
+                 ):
+        
+        """
+        Initialize the FastCDA object
+
+        Args:
+        verbose - message verbosity, default is level 1
+        min_java_version - minimum java version to accept
+        
+        """
         
         # default verbose level is 1, 2 is more chatty
         # output about what is happening
@@ -68,7 +78,12 @@ class FastCDA():
         # check if we have correct Java version
         if not self.check_java_version(min_java_version=self.min_java_version):
             raise ValueError(f"Java version must be {self.min_java_version} or higher. Please update your Java installation.")
-        self.startJVM()
+        
+        # only start if not already started
+        if  not jpype.isJVMStarted():
+            self.startJVM()
+        else:
+            if self.verbose >= 1: print("Java Virtual Machine already running...")
         pass
     
     def startJVM(self, 

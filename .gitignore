@@ -3,3 +3,4 @@ gfci_boston_data*
 boston*
 dist/
 __pycache__/
+.venv/
