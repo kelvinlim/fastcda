@@ -23,11 +23,12 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '6')
+__version_info__ = ('0', '1', '7')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.7 - support min_java_version to 17
 0.1.6 - change how configuration is done.  Eliminate the .tetradrc file.
         Use a fastcda.yaml file instead containing these two variables:
         
@@ -49,7 +50,7 @@ class FastCDA():
     
     def __init__(self, 
                  verbose: int = 1,
-                 min_java_version: int = 21
+                 min_java_version: int = 17
                  ):
         
         """
