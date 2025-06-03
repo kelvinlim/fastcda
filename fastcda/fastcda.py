@@ -23,11 +23,13 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '7')
+__version_info__ = ('0', '1', '8')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.8 - add support for providing a custom Tetrad JAR file path
+        to the FastCDA object. If not provided, the default JAR file is used.
 0.1.7 - support min_java_version to 17
 0.1.6 - change how configuration is done.  Eliminate the .tetradrc file.
         Use a fastcda.yaml file instead containing these two variables:
@@ -50,7 +52,8 @@ class FastCDA():
     
     def __init__(self, 
                  verbose: int = 1,
-                 min_java_version: int = 17
+                 min_java_version: int = 17,
+                 tetrad_jar_path: Optional[str] = None
                  ):
         
         """
@@ -59,6 +62,7 @@ class FastCDA():
         Args:
         verbose - message verbosity, default is level 1
         min_java_version - minimum java version to accept
+        tetrad_jar_path - path to the Tetrad JAR file, if None, uses the default JAR in the package
         
         """
         
@@ -91,13 +95,14 @@ class FastCDA():
         
         # only start if not already started
         if  not jpype.isJVMStarted():
-            self.startJVM()
+            self.startJVM(tetrad_jar_path=tetrad_jar_path)
         else:
             if self.verbose >= 1: print("Java Virtual Machine already running...")
         pass
     
     def startJVM(self, 
-                 jvm_args="-Xmx8g"
+                 jvm_args="-Xmx8g",
+                 tetrad_jar_path: Optional[str] = None
                  ):
         
         """
@@ -106,10 +111,17 @@ class FastCDA():
         Args:
         
         """
-        # Determine the path to the JAR file dynamically
-        jar_filename = "tetrad-gui-7.6.3-launch.jar"
-        jar_resource = pkg_resources_files('fastcda.jars').joinpath(jar_filename)
-        classpath = str(jar_resource) # This gives a Path object, convert to string for jpype
+        # check if a custom JAR path is provided
+        if tetrad_jar_path is not None:
+            if not os.path.exists(tetrad_jar_path):
+                raise ValueError(f"Provided JAR path {tetrad_jar_path} does not exist.")
+            classpath = tetrad_jar_path
+        else:
+            # Use the default JAR file from the package resources
+            # Determine the path to the JAR file dynamically if inside package
+            jar_filename = "tetrad-gui-7.6.3-launch.jar"
+            jar_resource = pkg_resources_files('fastcda.jars').joinpath(jar_filename)
+            classpath = str(jar_resource) # This gives a Path object, convert to string for jpype
 
         if self.verbose > 1: print(f"Attempting to start JVM with classpath: {classpath}")
         res = jpype.startJVM(jvm_args, classpath=classpath)
