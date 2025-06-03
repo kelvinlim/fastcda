@@ -866,7 +866,7 @@ class FastCDA():
             e.g. {"sem_bic": {"penalty_discount": 1}}
             
         test - dictionary with the arguments for the test alpha 
-        
+        graph - boolean, if False, will not return a graph object
         run_sem - boolean, if True, will run semopy on the results
         jitter - boolean, if True, will jitter the data
         
@@ -879,6 +879,7 @@ class FastCDA():
         knowledge = kwargs.get('knowledge', None)
         score = kwargs.get('score', None)
         test = kwargs.get('test', None)
+        run_graph = kwargs.get('run_graph', True)
         run_sem = kwargs.get('run_sem', True)
         jitter = kwargs.get('jitter',False)
         depth = kwargs.get('depth', -1)
@@ -920,21 +921,23 @@ class FastCDA():
 
         edges = self.extract_edges(graph)
         
-        # create the graph object
-        dg = DgraphFlex()
-        # add the edges to the graph object
-        dg.add_edges(edges)
-        # if run_sem is True, then run semopy on the edges
-        if run_sem:
-            # convert edges to lavaan model
-            lavaan_model = self.edges_to_lavaan(edges)
-            # run semopy on the lavaan model
-            sem_results = self.run_semopy(lavaan_model, df)
-            # add the sem results to the graph object
-            self.add_sem_results_to_graph(dg, sem_results['estimates'])
+        if run_graph:
+            # create the graph object
+            dg = DgraphFlex()
+            # add the edges to the graph object
+            dg.add_edges(edges)
+            # if run_sem is True, then run semopy on the edges
+            if run_sem:
+                # convert edges to lavaan model
+                lavaan_model = self.edges_to_lavaan(edges)
+                # run semopy on the lavaan model
+                sem_results = self.run_semopy(lavaan_model, df)
+                # add the sem results to the graph object
+                self.add_sem_results_to_graph(dg, sem_results['estimates'])
 
         else:
             sem_results = None
+            dg = None
             
         result = {  'edges': edges,
                     'cda_output': graph,
@@ -1003,11 +1006,12 @@ class FastCDA():
             # standardize the data
             df = self.standardize_df_cols(df)
                 
-            # run the search
-            searchResult = self.run_model_search(df, model=model, 
+            # run the search, no sem
+            searchResult,_ = self.run_model_search(df, model=model, 
                                                 knowledge=knowledge, 
                                                 score=score,
                                                 test=test,
+                                                run_graph=False,
                                                 verbose=True)
             # get the edges
             edges = searchResult['edges']
