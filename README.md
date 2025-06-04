@@ -6,7 +6,7 @@ The primary driver of this project is to create a package that can be installed 
 
 During the initial phase, we use jpype to call methods in the Tetrad java program from Carnegie Mellon University (https://github.com/cmu-phil/tetrad).  This will also facilitate comparison between algorithms. The default Tetrad version being used in 7.6.3.  This corresponds to causal_cmd 1.12.0.
 
-The code has been designed and tested to run on Windows11, macOS Sequoia and Ubuntu 22.04.  It should run on other versions of these platforms.
+The code has been designed and tested to run on Windows11, macOS Sequoia and Ubuntu 24.04.  It should run on other versions of these platforms.
 
 For a simple sample usage example, try out the fastcda_demo_short.ipynb file in the github repository. This will run nicely within vscode.
 
@@ -14,7 +14,7 @@ For a simple sample usage example, try out the fastcda_demo_short.ipynb file in 
 
 ### 1. Preliminaries
 
-You will need a JDK21 or higher version which can be downloaded from here: https://www.oracle.com/java/technologies/downloads/#java21
+To use Tetrad, you will need a Java JDK 17 or higher version. We recommend JDK 21, which is the latest Long-Term Support (LTS) release of the Java SE Platform. It can be downloaded from here: https://www.oracle.com/java/technologies/downloads/#java21
 
 You will also need the graphviz package which can be downloaded from here: https://graphviz.org/download/
 
@@ -28,11 +28,11 @@ can use a yaml configuration file to specify the locations.
 
 For linux/macos, the configuration file  should
 be in the home directory, e.g.  ~/.fastcda.yaml.  For Windows,
-the file should be placed in the Users home directory AppData\Local
+the file should be placed in the Users home directory:
 
-C:\Users\<YourUser>\AppData\Local
+C:\Users\<YourUser>\AppData\Local\fastcda.yaml
 
-Here is a sample yaml configuration file.
+Here is a sample fastcda.yaml configuration file.
 
 ```
 # configuration file for FastCDA
@@ -50,15 +50,16 @@ GRAPHVIZ_BIN: /opt/homebrew/bin
 ### 2. Create a python virtual environment
 
 ```
+# 1. Create the virtual environment
 python -m venv .venv
 
-# Activate the virtual environment
+# 2. Activate the virtual environment
 # On Windows PowerShell:
 .venv\Scripts\activate.ps1
 # On macOS/Linux:
 source .venv/bin/activate
 
-# Then install the necessary packages using pip
+# 3. Install the necessary packages using pip
 pip install fastcda
 
 ```
