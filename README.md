@@ -23,7 +23,7 @@ needed java version and the graphviz dot program. If it is
 unable to find the necessary programs, it will complain and
 exit.
 
-If you have installed the packages in non standard locations, you
+If you have installed the java and graphviz in non standard locations, you
 can use a yaml configuration file to specify the locations.
 
 For linux/macos, the configuration file  should
@@ -50,21 +50,29 @@ GRAPHVIZ_BIN: /opt/homebrew/bin
 ### 2. Create a python virtual environment
 
 ```
-# 1. Create the virtual environment
+# 1. Create a project directory (e.g. test_fastcda) and move into the directory
+# In Windows PowerShell or Terminal/macOS/Linus
+mkdir test_fastcda
+cd test_fastcda
+
+# 2. Create the virtual environment 
 python -m venv .venv
 
-# 2. Activate the virtual environment
+# 3. Activate the virtual environment
 # On Windows PowerShell:
 .venv\Scripts\activate.ps1
 # On macOS/Linux:
 source .venv/bin/activate
 
-# 3. Install the necessary packages using pip
+# 4. Install the necessary packages using pip
 pip install fastcda
 
 ```
 
 ### 3. Sample usage
+
+The sample jupyter notebook fastcda_demo_short.ipynb can be
+downloaded from github. (https://github.com/kelvinlim/fastcda/blob/main/fastcda_demo_short.ipynb)
 
 a. Load the packages and create an instance of FastCDA
 
