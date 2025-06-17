@@ -27,10 +27,10 @@ If you have installed the java and graphviz in non standard locations, you
 can use a yaml configuration file to specify the locations.
 
 For linux/macos, the configuration file  should
-be in the home directory, e.g.  ~/.fastcda.yaml.  For Windows,
-the file should be placed in the Users home directory:
+be in the home directory, e.g.  ~/.fastcda.yaml.  
 
-C:\Users\<YourUser>\AppData\Local\fastcda.yaml
+For Windows, the file should be placed in the Users home directory, e.g. 
+C:\Users\<YourUser>\AppData\Local\fastcda\fastcda.yaml
 
 Here is a sample fastcda.yaml configuration file.
 
