@@ -106,10 +106,17 @@ class FastCDA():
                  ):
         
         """
-        Start the JVM using the provided args
+        Starts the Java Virtual Machine (JVM) to enable interaction with the Tetrad library.
+
+        This method configures the classpath to point to either a user-specified Tetrad JAR file
+        or the default JAR file bundled with the package. It then initializes the JVM using jpype
+        and creates handles for commonly used Tetrad and Java packages.
         
         Args:
-        
+            jvm_args (str): Arguments to pass to the JVM, e.g., for memory allocation.
+                            Defaults to "-Xmx8g" (8GB maximum heap size).
+            tetrad_jar_path (Optional[str]): The absolute path to a custom Tetrad JAR file.
+                                             If None, the default bundled JAR is used.
         """
         # check if a custom JAR path is provided
         if tetrad_jar_path is not None:
