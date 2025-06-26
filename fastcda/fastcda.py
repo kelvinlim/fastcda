@@ -23,11 +23,12 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '8')
+__version_info__ = ('0', '1', '9')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.9 - refactor the run_stability_search to make it parallel to run_model_search
 0.1.8 - add support for providing a custom Tetrad JAR file path
         to the FastCDA object. If not provided, the default JAR file is used.
 0.1.7 - support min_java_version to 17
@@ -975,11 +976,15 @@ class FastCDA():
                             subsample_fraction: float = 0.9,
                             random_state: Optional[int] = None,
                             lag_stub: str = '',
-                            save_file: Optional[str] = None) -> tuple:
+                            save_file: Optional[str] = None,
+                            run_sem: bool = True,
+                            run_graph: bool = True,
+                            jitter: bool = False,
+                            ) -> tuple:
         """
         Run a stability search on the DataFrame using the specified model.
         
-        Edges are tabluated for each run using a set.
+        Edges are tabulated for each run using a set.
         Edges that are present for a minimum of min_fraction of runs will be retained
         and returned.
         The edges are returned as a list of strings.
@@ -996,7 +1001,8 @@ class FastCDA():
             random_state: Optional[int] - random state for reproducibility
             lag_stub: - if given a string, will add lagged columns to the DataFrame with the stub
         Returns:
-            list - list with the results
+            Results dictionary - edges and other results
+            dg - DgraphFlex object with the edges and sem results
         """
 
         # dictionary where key is the edge and value is the number of times it was found
@@ -1060,12 +1066,43 @@ class FastCDA():
 
         selected_edges = self.select_edges(sorted_edge_counts, min_fraction=min_fraction)
 
+        if run_graph:
+            # create the graph object
+            dg = DgraphFlex()
+            # add the edges to the graph object
+            dg.add_edges(selected_edges)
+            
+            # if run_sem is True, then run semopy on the edges
+            if run_sem:
+                
+                # prepare the data, using full_df
+                if lag_stub:
+                    # add lagged columns
+                    df = self.add_lag_columns(df, lag_stub=lag_stub)
+                else:
+                    df = full_df.copy()
+                
+                # standardize the data
+                df = self.standardize_df_cols(df)
+
+                # convert edges to lavaan model
+                lavaan_model = self.edges_to_lavaan(selected_edges)
+                # run semopy on the lavaan model
+                sem_results = self.run_semopy(lavaan_model, df)
+                # add the sem results to the graph object
+                self.add_sem_results_to_graph(dg, sem_results['estimates'])
+
+        else:
+            sem_results = None
+            dg = None
+            
         # combine results into a dictionary
         results = {
-            'selected_edges': selected_edges,
+            'edges': selected_edges,
             'sorted_edge_counts': sorted_edge_counts,
             'sorted_edge_counts_raw': sorted_edge_counts_raw,
             'edge_counts': edge_counts, 
+            'sem_results': sem_results,
             #'run_results': run_results, # error is not JSON serializable
         }
 
@@ -1075,7 +1112,8 @@ class FastCDA():
                 json.dump(results, f, indent=4)
             print(f"Results saved to {save_file}")
 
-        return selected_edges, sorted_edge_counts, sorted_edge_counts_raw, run_results
+        return results, dg
+
     def in_jupyter(self)->bool:
         """
         Check if the code is running in a Jupyter Notebook environment.

@@ -4,3 +4,4 @@ boston*
 dist/
 __pycache__/
 .venv/
+.venv_311/
