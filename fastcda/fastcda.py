@@ -23,11 +23,12 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '9')
+__version_info__ = ('0', '1', '10')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.10 - include cda_output as key in results for run_stability_search
 0.1.9 - refactor the run_stability_search to make it parallel to run_model_search
 0.1.8 - add support for providing a custom Tetrad JAR file path
         to the FastCDA object. If not provided, the default JAR file is used.
@@ -1095,7 +1096,16 @@ class FastCDA():
         else:
             sem_results = None
             dg = None
-            
+        
+        # create the string containing the edges, similar to the 
+        # output of the tetrad search
+        cda_output = "\nGraph Edges:\n"
+        edge_count = 1
+        for edge in selected_edges:
+            cda_output += f"{edge_count}. {edge}\n"
+            edge_count += 1
+        cda_output += "\nGraph Attributes:\n"
+
         # combine results into a dictionary
         results = {
             'edges': selected_edges,
@@ -1103,6 +1113,7 @@ class FastCDA():
             'sorted_edge_counts_raw': sorted_edge_counts_raw,
             'edge_counts': edge_counts, 
             'sem_results': sem_results,
+            'cda_output': cda_output,
             #'run_results': run_results, # error is not JSON serializable
         }
 
