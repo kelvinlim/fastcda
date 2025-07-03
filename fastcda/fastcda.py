@@ -23,11 +23,12 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '10')
+__version_info__ = ('0', '1', '11')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.11 - change order of path so that current is moved to end
 0.1.10 - include cda_output as key in results for run_stability_search
 0.1.9 - refactor the run_stability_search to make it parallel to run_model_search
 0.1.8 - add support for providing a custom Tetrad JAR file path
@@ -290,7 +291,7 @@ class FastCDA():
                 java_path = f"{java_home}/bin"
                 current_path = os.environ.get('PATH')
                 # add this to PATH
-                os.environ['PATH'] = f"{current_path}{os.pathsep}{java_path}"
+                os.environ['PATH'] = f"{java_path}{os.pathsep}{current_path}"
 
             # check if GRAPHVIZ_BIN exists in config
             if 'GRAPHVIZ_BIN' in config:
