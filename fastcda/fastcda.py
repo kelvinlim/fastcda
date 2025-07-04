@@ -23,11 +23,12 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '12')
+__version_info__ = ('0', '1', '13')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.13 - trap edges o-- ? convert to o-o in run_model_search
 0.1.12 - add create_lag_knowledge method and added try block to 
         trap errors with singularity in run_gfci
 0.1.11 - change order of path so that current is moved to end
@@ -1000,6 +1001,12 @@ class FastCDA():
 
         edges = self.extract_edges(graph)
         
+        # fix bad edges o-- to o-o
+        for index in range(len(edges)):
+            if 'o--' in edges[index]:
+                if self.verbose > 1: print(f"Found o-- in {edges[index]} replacing with o-o")
+                edges[index] = edges[index].replace('o--', 'o-o')
+
         # only create graph if there are edges
         if run_graph and edges != []:
             # create the graph object
