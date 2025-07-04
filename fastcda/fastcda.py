@@ -23,11 +23,13 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '11')
+__version_info__ = ('0', '1', '12')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.12 - add create_lag_knowledge method and added try block to 
+        trap errors with singularity in run_gfci
 0.1.11 - change order of path so that current is moved to end
 0.1.10 - include cda_output as key in results for run_stability_search
 0.1.9 - refactor the run_stability_search to make it parallel to run_model_search
@@ -319,6 +321,21 @@ class FastCDA():
         csv_path = str(csv_resource) # This gives a Path object, convert to string for jpype
         df = pd.read_csv(csv_path)
         return df
+
+    def getSampleData(self, csv_filename: str) -> pd.DataFrame:
+        """
+        Returns a dataframe containing an EMA dataset
+        
+        Args:
+        csv_filename - name of the csv file to load that is in data directory
+        Returns:
+        pandas dataframe
+        """
+        
+        csv_resource = pkg_resources_files('fastcda.data').joinpath(csv_filename)
+        csv_path = str(csv_resource) # This gives a Path object, convert to string for jpype
+        df = pd.read_csv(csv_path)
+        return df    
     
     def df_to_data(self, 
                    df: pd.DataFrame,
@@ -708,7 +725,47 @@ class FastCDA():
         Clears the knowledge in the search object
         """
         self.knowledge = self.td.Knowledge()
+
+    def create_lag_knowledge(self, columns, lag_stub = '_'):
+        """
+        Create a lag knowledge structure based on the columns
+
+        Sample structure
         
+        knowledge = {'addtemporal': {
+                                0: ['alcohol_bev_lag',
+                                    'TIB_lag',
+                                    'TST_lag',
+                                    'PANAS_PA_lag',
+                                    'PANAS_NA_lag',
+                                    'worry_scale_lag',
+                                    'PHQ9_lag'],
+                                1: ['alcohol_bev',
+                                    'TIB',
+                                    'TST',
+                                    'PANAS_PA',
+                                    'PANAS_NA',
+                                    'worry_scale',
+                                    'PHQ9']
+                                }
+                }
+        Args:
+            columns (List): list of column names
+            lag_stub (str, optional): lag stub suffix. Defaults to '_'.
+        """
+        
+        # create the 1 list
+        list_1 = [col for col in columns]
+        # create the 0 list, the lagged variables
+        list_0 = [col+lag_stub for col in columns]
+        
+        knowledge = {"addtemporal": {
+                                        0: list_0,
+                                        1: list_1
+                                        }
+                    }
+        return knowledge    
+
     def load_knowledge(self, knowledge:dict):
         """
         Load the knowledge
@@ -943,7 +1000,8 @@ class FastCDA():
 
         edges = self.extract_edges(graph)
         
-        if run_graph:
+        # only create graph if there are edges
+        if run_graph and edges != []:
             # create the graph object
             dg = DgraphFlex()
             # add the edges to the graph object
@@ -1146,8 +1204,54 @@ class FastCDA():
             pass
         
         return False
-            
+
     def run_gfci(self, df: pd.DataFrame,
+                 alpha: float = 0.01,
+                 penalty_discount: float = 1,
+                 jitter: bool = False) -> str:
+        
+        data = self.df_to_data(df, jitter)
+
+        test = self.ts.test.IndTestFisherZ(data, alpha)
+        score = self.ts.score.SemBicScore(data, True)
+        score.setPenaltyDiscount(penalty_discount)
+        score.setStructurePrior(0)
+
+        # FOR THE MOST PART, DONT CHANGE ANY OF THESE
+        # UNLESS COMPUTATION IS TAKING TOO LONG
+        gfci = self.ts.GFci(test, score)
+        gfci.setCompleteRuleSetUsed(True)
+        gfci.setDepth(-1)
+        gfci.setDoDiscriminatingPathRule(True)
+        gfci.setFaithfulnessAssumed(True)
+        gfci.setMaxDegree(-1)
+        gfci.setMaxPathLength(-1)
+        gfci.setPossibleMsepSearchDone(True)
+        gfci.setVerbose(False)
+        
+        # set knowledge
+        gfci.setKnowledge(self.knowledge)
+        
+        # run the search
+        try:
+            # This is the line that might throw the error
+            graph = gfci.search().toString() 
+            #graph = self.run_gfci(df).toString() 
+        except jpype.JException as e:
+            # This block will execute if a JavaException occurs
+            print(f"Caught a Java error during GFCI execution: {e}")
+            print("This often means a singular matrix was encountered.")
+            # Decide what to do next. You might want to:
+            # - Skip this dataset
+            # - Log the error and continue
+            # - Return a default value or an empty graph
+            graph = '' # Example: set graph to empty string and proceed
+
+        # ... your code continues, now handling the possibility that 'graph' is None ...
+        
+        return graph
+                
+    def run_gfci_(self, df: pd.DataFrame,
                  alpha: float = 0.01,
                  penalty_discount: float = 1,
                  jitter: bool = False) -> str:
