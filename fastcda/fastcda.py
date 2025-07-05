@@ -23,11 +23,12 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '13')
+__version_info__ = ('0', '1', '14')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.14 - add try except in run_semopy
 0.1.13 - trap edges o-- ? convert to o-o in run_model_search
 0.1.12 - add create_lag_knowledge method and added try block to 
         trap errors with singularity in run_gfci
