@@ -23,11 +23,12 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '14')
+__version_info__ = ('0', '1', '15')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.15 - check for edges in stability_search
 0.1.14 - add try except in run_semopy
 0.1.13 - trap edges o-- ? convert to o-o in run_model_search
 0.1.12 - add create_lag_knowledge method and added try block to 
@@ -1145,7 +1146,8 @@ class FastCDA():
 
         selected_edges = self.select_edges(sorted_edge_counts, min_fraction=min_fraction)
 
-        if run_graph:
+        # insure that there are edges
+        if run_graph and selected_edges != []:
             # create the graph object
             dg = DgraphFlex()
             # add the edges to the graph object
