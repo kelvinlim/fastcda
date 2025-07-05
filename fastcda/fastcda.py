@@ -889,9 +889,20 @@ class FastCDA():
         ## for proj_dyscross2/config_v2.yaml - no direct edges!
         ## TODO - also delete output files before writing to them so that
         ## we don't have hold overs from prior runs.
-        opt_res = model.fit(data)
-        estimates = model.inspect()
-        stats = semopy.calc_stats(model)
+
+        try:
+            opt_res = model.fit(data)
+            estimates = model.inspect()
+            stats = semopy.calc_stats(model)
+
+        except ValueError as ve:
+            # Catches errors related to model specification or data issues
+            print(f"An error occurred during model fitting: {ve}")
+            print("This might be due to an unusable model, such as one with no direct edges.")
+
+        except Exception as e:
+            # Catches any other unexpected errors during the fitting process
+            print(f"An unexpected error occurred: {e}")
         
         # change column names lval to dest and rval to src
         estimatesRenamed = estimates.rename(columns={'lval': 'dest', 'rval': 'src'})
