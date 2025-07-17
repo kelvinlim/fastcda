@@ -23,11 +23,12 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '16')
+__version_info__ = ('0', '1', '17')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.17 - add the jitter option in the run_stability_search
 0.1.16 - check for valid sem_results in run_stability_search with isinstance
 0.1.15 - check for edges in stability_search
 0.1.14 - add try except in run_semopy
@@ -1093,6 +1094,10 @@ class FastCDA():
             subsample_fraction: float - fraction of data to subsample for each run
             random_state: Optional[int] - random state for reproducibility
             lag_stub: - if given a string, will add lagged columns to the DataFrame with the stub
+            save_file: str - name of file
+            run_sem: bool - run the sem 
+            run_graph: bool - run the graph
+            jitter: bool - jitter the data
         Returns:
             Results dictionary - edges and other results
             dg - DgraphFlex object with the edges and sem results
@@ -1130,7 +1135,8 @@ class FastCDA():
                                                 score=score,
                                                 test=test,
                                                 run_graph=False,
-                                                verbose=True)
+                                                verbose=True,
+                                                jitter=jitter)
             # get the edges
             edges = searchResult['edges']
             # loop over the edges
