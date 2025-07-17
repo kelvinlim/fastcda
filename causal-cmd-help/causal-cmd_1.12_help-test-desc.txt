@@ -1,0 +1,58 @@
+================================================================================
+Independence Tests
+================================================================================
+cci-test
+--------------------------------------------------------------------------------
+CCI ("Conditional Correlation Independence") is a fairly general independence test—not completely general, but general for additive noise models—that is, model in which each variable is equal to a (possibly nonlinear) function of its parents, plus some additive noise, where the noise may be arbitrarily distributed. That is, X = f(parent(X)) + E, where f is any function and E is noise however distributed; the only requirement is that there be the “+” in the formula separating the function from the noise. The noise can’t for instance, be multiplicative, e.g., X = f(parent(X)) x E. The goal of the method is to estimate whether X is independent of Y given variables Z, for some X, Y, and Z. It works by calculating the residual of X given Z and the residual of Y given Z and looking to see whether those two residuals are independent. This test may be used with any constraint-based algorithm (PC, FCI, etc.).
+
+
+cg-lr-test
+--------------------------------------------------------------------------------
+Conditional Gaussian Test is a likelihood ratio test based on the conditional Gaussian likelihood function. This is intended for use with datasets where there is a mixture of continuous and discrete variables. It is assumed that the continuous variables are Gaussian conditional on each combination of values for the discrete variables, though it will work fairly well even if that assumption does not hold strictly. This test may be used with any constraint-based algorithm (PC, FCI, etc.). See Andrews, B., Ramsey, J., & Cooper, G. F. (2018). Scoring Bayesian networks of mixed variables. International journal of data science and analytics, 6(1), 3-18.
+
+
+chi-square-test
+--------------------------------------------------------------------------------
+This is the usual Chi-Square test for discrete variables; consult an introductory statistics book for details for the unconditional case, where you're just trying, e.g., to determine if X and Y are independent. For the conditional case, the test proceeds as in Fienberg, S. E. (2007). The analysis of cross-classified categorical data, Springer Science & Business Media, by identifying and removing from consideration zero rows or columns in the conditional tables and judging dependence based on the remaining rows and columns.
+
+
+dg-lr-test
+--------------------------------------------------------------------------------
+Degenerate Gaussian Likelihood Ratio Test may be used for the case where there is a mixture of discrete and Gaussian variables. Calculates a likelihood ratio based on likelihood that is calculated using a conditional Gaussian assumption. See Andrews, B., Ramsey, J., & Cooper, G. F. (2019). Learning high-dimensional directed acyclic graphs with mixed data-types. Proceedings of machine learning research, 104, 4.
+
+
+fisher-z-test
+--------------------------------------------------------------------------------
+Fisher Z judges independence if the conditional correlation is cannot statistically be distinguished from zero. Primarily for the linear, Gaussian case.
+
+
+g-square-test
+--------------------------------------------------------------------------------
+This is completely parallel to the Chi-Square statistic, using a slightly different method for estimating the statistic. The alternative statistic is still distributed as chi-square in the limit. In practice, this statistic is more or less indistinguishable in most cases from Chi-Square. For an explanation, see Spirtes, P., Glymour, C. N., Scheines, R., Heckerman, D., Meek, C., Cooper, G., & Richardson, T. (2000). Causation, prediction, and search. MIT press.
+
+
+kci-test
+--------------------------------------------------------------------------------
+KCI ("Kernel Conditional Independence") is a general independence test for model in which X = f(parents(X), eY); here, eY does not need to be additive; it can stand in any functional relationships to the other variables. The variables may even be discrete. The goal of the method is to estimate whether X is independent of Y given Z, completely generally. It uses the kernel trick to estimate this. As a result of using the kernel trick, the method is complex in the direction of sample size, meaning that it may be very slow for large samples. Since it’s slow, individual independence results are always printed to the console so the user knows how far a procedure has gotten. This test may be used with any constraint-based algorithm (PC, FCI, etc.)
+
+
+m-sep-test
+--------------------------------------------------------------------------------
+This is the usual test of m-separation, a property of graphs, not distributions. It's not really a test, but it can be used in place of a test of the true graph is known. This is a way to find out, for constraint-based algorithms, or even for some score-based algorithms like FGES, what answer the algorithm would give if all the statistical decisions made are correct. Just draw an edge from the true graph to the algorithm--the m-separation option will appear, and you can then just run the search as usual. Note that D-Separation and M-separation use the same algorithm; we uniformly call the algorithm "M-Separation" for clarity. D-Separation is M-Separation applied to DAGs.
+
+
+mag-sem-bic-test
+--------------------------------------------------------------------------------
+This gives a BIC score (used as a test here) for a Mixed Ancestral Graph (MAG). Note that BIC is calculated as 2L - k ln N, so "higher is better."
+
+
+prob-test
+--------------------------------------------------------------------------------
+The Probabilistic Test applies a Bayesian method to derive the posterior probability of an independence constraint R = (X⊥Y|Z) given a dataset D. This is intended for use with datasets with discrete variables. It can be used with constraint-based algorithms (e.g., PC and FCI). Since this test provides a probability for each independence constraint, it can be used stochastically by sampling based on the probabilities of the queried independence constraints to obtain several output graphs. It can also be used deterministically by using a fixed decision threshold on the probabilities of the queried independence constraints to generate a single output graph.
+
+
+sem-bic-test
+--------------------------------------------------------------------------------
+This uses the SEM BIC Score to create a test for the linear, Gaussian case, where we include an additional penalty term, which is commonly used. We call this the penalty discount. So our formulas has BIC = 2L - ck log N,where L is the likelihood, c the penalty discount (usually greater than or equal to 1), and N the sample size. Since the assumption is that the data are distributed as Gaussian, this reduces to BIC = -n log sigma - ck ln N, where sigma is the standard deviation of the linear residual obtained by regressing a child variable onto all of its parents in the model.
+
+
