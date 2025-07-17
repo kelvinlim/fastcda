@@ -988,7 +988,7 @@ class FastCDA():
         test = kwargs.get('test', None)
         run_graph = kwargs.get('run_graph', True)
         run_sem = kwargs.get('run_sem', True)
-        jitter = kwargs.get('jitter',False)
+        jitter = kwargs.get('jitter',True)
         depth = kwargs.get('depth', -1)
         verbose = kwargs.get('verbose', False)
         max_degree = kwargs.get('max_degree', -1)
@@ -1073,7 +1073,7 @@ class FastCDA():
                             save_file: Optional[str] = None,
                             run_sem: bool = True,
                             run_graph: bool = True,
-                            jitter: bool = False,
+                            jitter: bool = True,
                             ) -> tuple:
         """
         Run a stability search on the DataFrame using the specified model.
