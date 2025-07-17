@@ -23,11 +23,14 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '13')
+__version_info__ = ('0', '1', '16')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.16 - check for valid sem_results in run_stability_search with isinstance
+0.1.15 - check for edges in stability_search
+0.1.14 - add try except in run_semopy
 0.1.13 - trap edges o-- ? convert to o-o in run_model_search
 0.1.12 - add create_lag_knowledge method and added try block to 
         trap errors with singularity in run_gfci
@@ -889,10 +892,33 @@ class FastCDA():
         ## for proj_dyscross2/config_v2.yaml - no direct edges!
         ## TODO - also delete output files before writing to them so that
         ## we don't have hold overs from prior runs.
-        opt_res = model.fit(data)
-        estimates = model.inspect()
-        stats = semopy.calc_stats(model)
-        
+
+        try:
+            opt_res = model.fit(data)
+            estimates = model.inspect()
+            stats = semopy.calc_stats(model)
+
+        except ValueError as ve:
+            # Catches errors related to model specification or data issues
+            print(f"An error occurred during model fitting: {ve}")
+            print("This might be due to an unusable model, such as one with no direct edges.")
+
+            return ({'opt_res': None,
+                    'estimates': None, 
+                    'estimatesDict': None,
+                    'stats': None,
+                    'model': model})
+            
+        except Exception as e:
+            # Catches any other unexpected errors during the fitting process
+            print(f"An unexpected error occurred: {e}")
+
+            return ({'opt_res': None,
+                    'estimates': None, 
+                    'estimatesDict': None,
+                    'stats': None,
+                    'model': model})
+                
         # change column names lval to dest and rval to src
         estimatesRenamed = estimates.rename(columns={'lval': 'dest', 'rval': 'src'})
         # convert the estimates to a dict using records
@@ -1133,7 +1159,8 @@ class FastCDA():
 
         selected_edges = self.select_edges(sorted_edge_counts, min_fraction=min_fraction)
 
-        if run_graph:
+        # insure that there are edges
+        if run_graph and selected_edges != []:
             # create the graph object
             dg = DgraphFlex()
             # add the edges to the graph object
@@ -1156,9 +1183,14 @@ class FastCDA():
                 lavaan_model = self.edges_to_lavaan(selected_edges)
                 # run semopy on the lavaan model
                 sem_results = self.run_semopy(lavaan_model, df)
-                # add the sem results to the graph object
-                self.add_sem_results_to_graph(dg, sem_results['estimates'])
-
+                
+                # check if sem_results exist
+                if isinstance(sem_results['estimates'], pd.DataFrame):
+                    # add the sem results to the graph object
+                    self.add_sem_results_to_graph(dg, sem_results['estimates'])
+                else:
+                    sem_results = None
+                    dg = None                    
         else:
             sem_results = None
             dg = None
