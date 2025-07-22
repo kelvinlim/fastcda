@@ -55,14 +55,14 @@ GRAPHVIZ_BIN: /opt/homebrew/bin
 mkdir test_fastcda
 cd test_fastcda
 
-# 2. Create the virtual environment 
-python -m venv .venv
+# 2. Create the virtual environment and store in the directory venv
+python -m venv venv
 
 # 3. Activate the virtual environment
 # On Windows PowerShell:
-.venv\Scripts\activate.ps1
+.\venv\Scripts\activate.ps1
 # On macOS/Linux:
-source .venv/bin/activate
+source venv/bin/activate
 
 # 4. Install the necessary packages using pip
 pip install fastcda
@@ -72,7 +72,12 @@ pip install fastcda
 ### 3. Sample usage
 
 The sample jupyter notebook fastcda_demo_short.ipynb can be
-downloaded from github. (https://github.com/kelvinlim/fastcda/blob/main/fastcda_demo_short.ipynb)
+downloaded from github (https://github.com/kelvinlim/fastcda/blob/main/fastcda_demo_short.ipynb).
+Save it in your test_fastcda folder.
+
+Open the file in vscode.  In the top right corner, click to select a kernel.  You may be prompted whether to install extensions for python, ipykernel, jupyter, etc. - accept this.  Then select the python environment you created earlier (venv).
+
+
 
 a. Load the packages and create an instance of FastCDA
 
