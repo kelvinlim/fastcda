@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fastcda"
-version = "0.1.17"
+version = "0.1.18"
 authors = [
   { name = "Kelvin O. Lim", email = "lim.kelvino@gmail.com" },
 ]

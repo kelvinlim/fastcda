@@ -24,11 +24,12 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '17')
+__version_info__ = ('0', '1', '18')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.18 - added nodestyles feature to allow custom node styles in the graph
 0.1.17 - add the jitter option in the run_stability_search
 0.1.16 - check for valid sem_results in run_stability_search with isinstance
 0.1.15 - check for edges in stability_search
