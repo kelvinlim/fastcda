@@ -2,6 +2,7 @@
 
 from importlib.resources import files as pkg_resources_files # For Python 3.9+
 
+import fnmatch
 import json
 import os
 import re
@@ -103,6 +104,8 @@ class FastCDA():
             # exit if any errors were found
             raise EnvironmentError(f"Exiting due to {exit_code} errors. Please resolve the issues and try again.")
         
+        self.node_styles = []
+
         # only start if not already started
         if  not jpype.isJVMStarted():
             self.startJVM(tetrad_jar_path=tetrad_jar_path)
@@ -950,6 +953,149 @@ class FastCDA():
                 
                 obj.modify_existing_edge(source, target, color=color, strength=estimate, pvalue=pvalue)
                 pass
+
+    # ------------------------------------------------------------------
+    # Node styling
+    # ------------------------------------------------------------------
+
+    def set_node_styles(self, node_styles: list):
+        """Store node style rules on this FastCDA instance.
+
+        Args:
+            node_styles: List of rule dicts.  Each dict must contain a
+                ``pattern`` key (fnmatch glob, e.g. ``"COG*"``) and any
+                number of Graphviz node attributes (``shape``, ``fillcolor``,
+                ``style``, ``penwidth``, ``color``, ``fontname``, etc.).
+
+                Rules are applied in list order; later rules override
+                earlier ones for the same node.
+
+        Example::
+
+            fc.set_node_styles([
+                {"pattern": "COG*", "shape": "box", "style": "filled",
+                 "fillcolor": "lightblue", "penwidth": "2"},
+                {"pattern": "MRI*", "shape": "oval", "style": "filled,dotted",
+                 "fillcolor": "lightpink", "penwidth": "5", "color": "red"},
+            ])
+        """
+        self.node_styles = list(node_styles)
+
+    @staticmethod
+    def get_node_names(dg) -> list:
+        """Extract all unique node names from a DgraphFlex graph.
+
+        Args:
+            dg: A DgraphFlex object with edges loaded.
+
+        Returns:
+            Sorted list of unique node name strings.
+        """
+        nodes = set()
+        for key in dg.graph['GRAPH']['edges']:
+            parts = key.split(' ')
+            nodes.add(parts[0])
+            nodes.add(parts[2])
+        return sorted(nodes)
+
+    @staticmethod
+    def resolve_node_styles(node_names: list, node_styles: list) -> dict:
+        """Match node names against pattern-based style rules.
+
+        Rules are applied in order.  For each node, later matching rules
+        override attributes set by earlier rules, allowing layered
+        defaults followed by specific overrides.
+
+        Args:
+            node_names: List of node name strings.
+            node_styles: List of rule dicts (each with a ``pattern`` key
+                and Graphviz attribute key-value pairs).
+
+        Returns:
+            Dict mapping ``node_name`` → ``{attr: value, …}`` for every
+            node that matched at least one rule.
+        """
+        resolved = {}
+        for node in node_names:
+            attrs = {}
+            for rule in node_styles:
+                if fnmatch.fnmatchcase(node, rule['pattern']):
+                    attrs.update({k: v for k, v in rule.items()
+                                  if k != 'pattern'})
+            if attrs:
+                resolved[node] = attrs
+        return resolved
+
+    @staticmethod
+    def apply_node_styles(dg, node_styles: list) -> None:
+        """Apply per-node styling to a DgraphFlex graphviz object.
+
+        Must be called **after** ``dg.load_graph()`` because
+        ``load_graph()`` creates a fresh ``Digraph`` object each time.
+
+        Args:
+            dg: DgraphFlex object whose ``dg.dot`` has already been
+                created via ``load_graph()``.
+            node_styles: List of pattern-based style rule dicts.
+        """
+        node_names = FastCDA.get_node_names(dg)
+        resolved = FastCDA.resolve_node_styles(node_names, node_styles)
+        for node_name, attrs in resolved.items():
+            str_attrs = {k: str(v) for k, v in attrs.items()}
+            dg.dot.node(node_name, **str_attrs)
+
+    @staticmethod
+    def show_styled_graph(dg, node_styles: list,
+                          format: str = 'png', res: int = 72,
+                          directed_only: bool = False):
+        """Display a styled graph in a Jupyter notebook.
+
+        Wrapper around ``dg.show_graph()`` that applies per-node
+        styling after ``load_graph()`` rebuilds the graphviz object.
+
+        Args:
+            dg: DgraphFlex object with edges loaded.
+            node_styles: List of pattern-based style rule dicts.
+            format: Image format for Jupyter (default ``'png'``).
+            res: Resolution in DPI (default 72).
+            directed_only: If True, only show directed edges.
+
+        Returns:
+            ``graphviz.Digraph`` object (rendered by Jupyter).
+        """
+        import graphviz
+        graphviz.set_jupyter_format(format)
+        dg.load_graph(res=res, directed_only=directed_only)
+        FastCDA.apply_node_styles(dg, node_styles)
+        return dg.dot
+
+    @staticmethod
+    def save_styled_graph(dg, node_styles: list,
+                          plot_pathname: str, plot_format: str = 'png',
+                          res: int = 300, cleanup: bool = True,
+                          directed_only: bool = False):
+        """Save a styled graph to a file.
+
+        Wrapper around ``dg.save_graph()`` that applies per-node
+        styling after ``load_graph()`` rebuilds the graphviz object.
+
+        Args:
+            dg: DgraphFlex object with edges loaded.
+            node_styles: List of pattern-based style rule dicts.
+            plot_pathname: Output file path (without extension).
+            plot_format: Output format (default ``'png'``).
+            res: Resolution in DPI (default 300).
+            cleanup: Remove intermediate Graphviz files (default True).
+            directed_only: If True, only include directed edges.
+        """
+        dg.load_graph(res=res, directed_only=directed_only)
+        FastCDA.apply_node_styles(dg, node_styles)
+        dg.gv_source = dg.dot.source
+        with open(f"{plot_pathname}.dot", 'w') as f:
+            f.write(dg.gv_source)
+        dg.dot.format = plot_format
+        dg.dot.render(filename=plot_pathname, format=plot_format,
+                      cleanup=cleanup)
 
     def run_model_search(self, df, **kwargs) -> tuple:
         """

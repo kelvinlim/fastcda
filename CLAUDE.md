@@ -78,6 +78,40 @@ Version is defined in two places that must stay in sync:
 - `fastcda/fastcda.py`: `__version_info__` tuple (line 26)
 - `pyproject.toml`: `version` field (line 7)
 
+## Node Styling
+
+Nodes in causal graphs can be visually styled by name pattern using `fnmatch` glob syntax. Style rules are a list of dicts, each with a `pattern` key and any Graphviz node attributes. Rules apply in order — later rules override earlier ones for the same node.
+
+```python
+node_styles = [
+    {"pattern": "*_lag",    "shape": "box",  "style": "filled", "fillcolor": "lightyellow"},
+    {"pattern": "PANAS_PA*","shape": "box",  "style": "filled", "fillcolor": "lightblue", "penwidth": "2"},
+    {"pattern": "PANAS_NA*","shape": "oval", "style": "filled,dotted", "fillcolor": "lightpink",
+     "penwidth": "5", "color": "red"},
+    {"pattern": "PHQ9",     "shape": "diamond", "style": "filled", "fillcolor": "lightsalmon"},
+]
+```
+
+Pattern types: `COG*` (prefix), `*_lag` (suffix), `PHQ9` (exact), `PANAS_?A` (single-char wildcard).
+
+Any valid Graphviz node attribute works: `shape`, `fillcolor`, `style`, `color`, `penwidth`, `fontname`, `fontsize`, `fontcolor`, `width`, `height`, etc.
+
+**Usage** — use `show_styled_graph` / `save_styled_graph` instead of `dg.show_graph()` / `dg.save_graph()`:
+
+```python
+result, dg = fc.run_model_search(df, ...)
+
+# Display in notebook
+fc.show_styled_graph(dg, node_styles)
+
+# Save to file
+fc.save_styled_graph(dg, node_styles, "my_graph")
+```
+
+These are wrappers that call `dg.load_graph()` then apply per-node styling before rendering. This is necessary because DgraphFlex rebuilds its Graphviz object from scratch on every `show_graph()` / `save_graph()` call.
+
+Helper methods: `get_node_names(dg)` returns all node names from a graph, `resolve_node_styles(names, rules)` previews which attributes each node will get, `set_node_styles(rules)` stores rules on the FastCDA instance.
+
 ## Edge Type Conventions
 
 Tetrad outputs edges like `A --> B`, `A o-> B`, `A o-o B`, `A <-> B`. The code handles a known Tetrad quirk where `o--` edges are converted to `o-o`. When converting to lavaan for SEM, only directed edges (`-->`, `o->`) are used; undirected types (`---`, `<->`, `o-o`) are excluded.

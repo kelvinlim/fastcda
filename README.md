@@ -149,3 +149,27 @@ graph.show_graph()
 ```
 
 ![Example Graph](https://github.com/kelvinlim/fastcda/blob/main/assets/causal_graph_boston.png)
+
+### 4. Node Styling
+
+Nodes in causal graphs can be visually styled by name pattern. Define a list of style rules, each with a `pattern` (fnmatch glob) and any Graphviz node attributes. Rules apply in order — later rules override earlier ones for the same node.
+
+```python
+node_styles = [
+    {"pattern": "*_lag",     "shape": "box",  "style": "filled", "fillcolor": "lightyellow"},
+    {"pattern": "PANAS_PA*", "shape": "box",  "style": "filled", "fillcolor": "lightblue", "penwidth": "2"},
+    {"pattern": "PANAS_NA*", "shape": "oval", "style": "filled,dotted", "fillcolor": "lightpink",
+     "penwidth": "5", "color": "red"},
+    {"pattern": "PHQ9",      "shape": "diamond", "style": "filled", "fillcolor": "lightsalmon"},
+]
+
+# Display styled graph in notebook (instead of graph.show_graph())
+fc.show_styled_graph(graph, node_styles)
+
+# Save styled graph to file (instead of graph.save_graph())
+fc.save_styled_graph(graph, node_styles, "my_graph")
+```
+
+Pattern types: `COG*` (prefix), `*_lag` (suffix), `PHQ9` (exact), `PANAS_?A` (single-char wildcard). Any valid Graphviz node attribute works: `shape`, `fillcolor`, `style`, `color`, `penwidth`, `fontname`, `fontsize`, etc.
+
+See `fastcda_demo_nodestyles.ipynb` for a complete working example.

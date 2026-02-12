@@ -345,3 +345,117 @@ class TestSummarizeEstimates:
         assert 'mean_abs_estimates' in result
         assert 'std_abs_estimates' in result
         assert abs(result['mean_abs_estimates'] - 0.45) < 1e-10
+
+
+# ---------------------------------------------------------------------------
+# Node styling
+# ---------------------------------------------------------------------------
+
+class TestNodeStyling:
+
+    def test_get_node_names_basic(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg = DgraphFlex()
+        dg.add_edges(["A --> B", "B o-> C", "C o-o D"])
+        names = FastCDA.get_node_names(dg)
+        assert sorted(names) == ["A", "B", "C", "D"]
+
+    def test_get_node_names_deduplication(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg = DgraphFlex()
+        dg.add_edges(["A --> B", "A --> C"])
+        names = FastCDA.get_node_names(dg)
+        assert names.count("A") == 1
+
+    def test_resolve_prefix_match(self):
+        from fastcda import FastCDA
+        names = ["COG_1", "COG_2", "MRI_1", "PHQ9"]
+        styles = [{"pattern": "COG*", "shape": "box", "fillcolor": "lightblue"}]
+        resolved = FastCDA.resolve_node_styles(names, styles)
+        assert "COG_1" in resolved
+        assert "COG_2" in resolved
+        assert resolved["COG_1"]["shape"] == "box"
+        assert "MRI_1" not in resolved
+
+    def test_resolve_exact_match(self):
+        from fastcda import FastCDA
+        names = ["PHQ9", "PHQ9_lag"]
+        styles = [{"pattern": "PHQ9", "shape": "diamond"}]
+        resolved = FastCDA.resolve_node_styles(names, styles)
+        assert "PHQ9" in resolved
+        assert "PHQ9_lag" not in resolved
+
+    def test_resolve_suffix_match(self):
+        from fastcda import FastCDA
+        names = ["A_lag", "B_lag", "C"]
+        styles = [{"pattern": "*_lag", "shape": "box"}]
+        resolved = FastCDA.resolve_node_styles(names, styles)
+        assert "A_lag" in resolved
+        assert "B_lag" in resolved
+        assert "C" not in resolved
+
+    def test_resolve_order_override(self):
+        from fastcda import FastCDA
+        names = ["COG_1"]
+        styles = [
+            {"pattern": "*", "fillcolor": "white"},
+            {"pattern": "COG*", "fillcolor": "lightblue"},
+        ]
+        resolved = FastCDA.resolve_node_styles(names, styles)
+        assert resolved["COG_1"]["fillcolor"] == "lightblue"
+
+    def test_resolve_partial_override(self):
+        from fastcda import FastCDA
+        names = ["COG_1"]
+        styles = [
+            {"pattern": "*", "shape": "oval", "fillcolor": "white"},
+            {"pattern": "COG*", "fillcolor": "lightblue"},
+        ]
+        resolved = FastCDA.resolve_node_styles(names, styles)
+        assert resolved["COG_1"]["shape"] == "oval"
+        assert resolved["COG_1"]["fillcolor"] == "lightblue"
+
+    def test_resolve_empty_styles(self):
+        from fastcda import FastCDA
+        resolved = FastCDA.resolve_node_styles(["A", "B"], [])
+        assert resolved == {}
+
+    def test_resolve_no_match(self):
+        from fastcda import FastCDA
+        styles = [{"pattern": "X*", "shape": "box"}]
+        resolved = FastCDA.resolve_node_styles(["A", "B"], styles)
+        assert resolved == {}
+
+    def test_apply_node_styles(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg = DgraphFlex()
+        dg.add_edges(["COG_1 --> MRI_1", "MRI_1 --> PHQ9"])
+        dg.load_graph()
+        styles = [{"pattern": "COG*", "shape": "box"}]
+        FastCDA.apply_node_styles(dg, styles)
+        assert 'shape=box' in dg.dot.source
+
+    def test_show_styled_graph_returns_dot(self):
+        import graphviz
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg = DgraphFlex()
+        dg.add_edges(["A --> B"])
+        styles = [{"pattern": "*", "style": "filled", "fillcolor": "white"}]
+        result = FastCDA.show_styled_graph(dg, styles)
+        assert isinstance(result, graphviz.Digraph)
+        assert 'fillcolor=white' in result.source
+
+    def test_set_node_styles(self, fc_no_jvm):
+        styles = [{"pattern": "COG*", "shape": "box"}]
+        fc_no_jvm.set_node_styles(styles)
+        assert fc_no_jvm.node_styles == styles
+
+    def test_set_node_styles_defensive_copy(self, fc_no_jvm):
+        styles = [{"pattern": "COG*", "shape": "box"}]
+        fc_no_jvm.set_node_styles(styles)
+        styles.append({"pattern": "X*", "shape": "oval"})
+        assert len(fc_no_jvm.node_styles) == 1
