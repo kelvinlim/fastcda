@@ -156,11 +156,9 @@ Nodes in causal graphs can be visually styled by name pattern. Define a list of 
 
 ```python
 node_styles = [
-    {"pattern": "*_lag",     "shape": "box",  "style": "filled", "fillcolor": "lightyellow"},
-    {"pattern": "PANAS_PA*", "shape": "box",  "style": "filled", "fillcolor": "lightblue", "penwidth": "2"},
+    {"pattern": "PANAS_PA*", "shape": "box", "style": "filled", "fillcolor": "lightgreen", "penwidth": "2"},
     {"pattern": "PANAS_NA*", "shape": "oval", "style": "filled,dotted", "fillcolor": "lightpink",
      "penwidth": "5", "color": "red"},
-    {"pattern": "PHQ9",      "shape": "diamond", "style": "filled", "fillcolor": "lightsalmon"},
 ]
 
 # Display styled graph in notebook (instead of graph.show_graph())
