@@ -415,14 +415,6 @@ class FastCDA():
         
         return df_lag
 
-   
-    def load_df_into_ts(self,df):
-        """
-        Loads a pandas DataFrame into the TetradSearch object.
-        """
-        self.data = tr.pandas_data_to_tetrad(df)
-        return self.data
-    
     def subsample_df(self, df: Optional[pd.DataFrame] = None,    
                     fraction: float = 0.9,
                     random_state: Optional[int] = None) -> pd.DataFrame:
@@ -1178,7 +1170,7 @@ class FastCDA():
                 # prepare the data, using full_df
                 if lag_stub:
                     # add lagged columns
-                    df = self.add_lag_columns(df, lag_stub=lag_stub)
+                    df = self.add_lag_columns(full_df, lag_stub=lag_stub)
                 else:
                     df = full_df.copy()
                 
@@ -1296,99 +1288,3 @@ class FastCDA():
         
         return graph
                 
-    def run_gfci_(self, df: pd.DataFrame,
-                 alpha: float = 0.01,
-                 penalty_discount: float = 1,
-                 jitter: bool = False) -> str:
-        
-        data = self.df_to_data(df, jitter)
-
-        test = self.ts.test.IndTestFisherZ(data, alpha)
-        score = self.ts.score.SemBicScore(data, True)
-        score.setPenaltyDiscount(penalty_discount)
-        score.setStructurePrior(0)
-
-        # FOR THE MOST PART, DONT CHANGE ANY OF THESE
-        # UNLESS COMPUTATION IS TAKING TOO LONG
-        gfci = self.ts.GFci(test, score)
-        gfci.setCompleteRuleSetUsed(True)
-        gfci.setDepth(-1)
-        gfci.setDoDiscriminatingPathRule(True)
-        gfci.setFaithfulnessAssumed(True)
-        gfci.setMaxDegree(-1)
-        gfci.setMaxPathLength(-1)
-        gfci.setPossibleMsepSearchDone(True)
-        gfci.setVerbose(False)
-        
-        # set knowledge
-        gfci.setKnowledge(self.knowledge)
-        
-        # run the search
-        graph = gfci.search().toString()    
-        
-        return graph
-
-    def test1(self):
-        """
-        Test running a simple gfci model
-        """
-        df = self.read_csv('data/boston_data_raw.csv')
-        output=self.run_gfci(df)
-        edges = self.extract_edges(output)
-        pass
-            
-    def test(self):
-        """
-        Test running a simple gfci model
-        with lag
-        """
-        df = self.read_csv('data/boston_data_raw.csv')
-        # add lag
-        df = self.add_lag_columns(df, lag_stub='_lag')
-        # standardize the columns
-        df = self.standardize_df_cols(df)
-        
-        # load prior
-        prior_lines = self.read_prior_file(f'data/boston_prior.txt')
-        # extract knowledge
-        knowledge = self.extract_knowledge(prior_lines)
-
-        self.load_knowledge(knowledge)
-        
-        output=self.run_gfci(df)
-        edges = self.extract_edges(output)
-
-        # get lavaan_model
-        lavaan_model = self.edges_to_lavaan(edges)
-        # run the semopy
-        sem_results = self.run_semopy(lavaan_model, df)
-        
-        # create the graph
-        obj = DgraphFlex()
-        obj.add_edges(edges)
-        # output graph
-        obj.save_graph("png","test_plot")
-                
-        # add sem info to graph
-        self.add_sem_results_to_graph(obj,sem_results['estimates'])
-        # output graph
-        obj.save_graph("png","test_plot_sem")    
-        
-        # create the graph excluding non directed edges
-        obj = DgraphFlex()
-        obj.add_edges(edges, exclude = ['---','o-o','<->'])
-        # output graph
-        obj.save_graph("png","test_plot2")
-                
-        # add sem info to graph
-        self.add_sem_results_to_graph(obj,sem_results['estimates'])
-        # output graph
-        obj.save_graph("png","test_plot2_sem")  
-            
-        pass
-        
-if __name__ == "__main__":
-    
-    tp = TetradPlus()
-    tp.test()
-    pass
