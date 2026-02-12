@@ -172,4 +172,6 @@ fc.save_styled_graph(graph, node_styles, "my_graph")
 
 Pattern types: `COG*` (prefix), `*_lag` (suffix), `PHQ9` (exact), `PANAS_?A` (single-char wildcard). Any valid Graphviz node attribute works: `shape`, `fillcolor`, `style`, `color`, `penwidth`, `fontname`, `fontsize`, etc.
 
+![Node Styling Example](https://github.com/kelvinlim/fastcda/blob/main/assets/node_styles_example.png)
+
 See `fastcda_demo_nodestyles.ipynb` for a complete working example.
