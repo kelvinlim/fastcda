@@ -150,15 +150,25 @@ graph.show_graph()
 
 ![Example Graph](https://github.com/kelvinlim/fastcda/blob/main/assets/causal_graph_boston.png)
 
+f. Show directed edges only
+
+```
+# lets show the directed edges only
+graph.show_graph(directed_only=True)
+```
+
 ### 4. Node Styling
 
 Nodes in causal graphs can be visually styled by name pattern. Define a list of style rules, each with a `pattern` (fnmatch glob) and any Graphviz node attributes. Rules apply in order — later rules override earlier ones for the same node.
 
 ```python
 node_styles = [
-    {"pattern": "PANAS_PA*", "shape": "box", "style": "filled", "fillcolor": "lightgreen", "penwidth": "2"},
-    {"pattern": "PANAS_NA*", "shape": "oval", "style": "filled,dotted", "fillcolor": "lightpink",
-     "penwidth": "5", "color": "red"},
+    {"pattern": "*_lag",        "style": "dotted"},
+    {"pattern": "PANAS_PA*",    "style": "filled", "fillcolor": "lightgreen"},
+    {"pattern": "PANAS_NA*",    "style": "filled", "fillcolor": "lightpink"},
+    {"pattern": "PANAS_PA_lag", "style": "filled,dotted", "fillcolor": "lightgreen"},
+    {"pattern": "PANAS_NA_lag", "style": "filled,dotted", "fillcolor": "lightpink"},
+    {"pattern": "alcohol_bev*", "shape": "box", "style": "filled", "fillcolor": "purple", "fontcolor": "white"},
 ]
 
 # Display styled graph in notebook (instead of graph.show_graph())
