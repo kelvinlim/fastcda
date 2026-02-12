@@ -159,7 +159,9 @@ graph.show_graph(directed_only=True)
 
 ### 4. Node Styling
 
-Nodes in causal graphs can be visually styled by name pattern. Define a list of style rules, each with a `pattern` (fnmatch glob) and any Graphviz node attributes. Rules apply in order — later rules override earlier ones for the same node.
+Nodes in causal graphs can be visually styled by name pattern. Define a list of style rules, each with a `pattern` (fnmatch glob) and any Graphviz node attributes. Rules apply in order — later rules override earlier ones for the same node. 
+
+Any valid Graphviz node attribute works: `shape`, `fillcolor`, `style`, `color`, `penwidth`, `fontname`, `fontsize`, etc.
 
 ```python
 node_styles = [
@@ -178,8 +180,6 @@ fc.show_styled_graph(graph, node_styles)
 fc.save_styled_graph(graph, node_styles, "my_graph")
 ```
 
-Pattern types: `COG*` (prefix), `*_lag` (suffix), `PHQ9` (exact), `PANAS_?A` (single-char wildcard). Any valid Graphviz node attribute works: `shape`, `fillcolor`, `style`, `color`, `penwidth`, `fontname`, `fontsize`, etc.
-
 ![Node Styling Example](https://github.com/kelvinlim/fastcda/blob/main/assets/node_styles_example.png)
 
-See `fastcda_demo_nodestyles.ipynb` for a complete working example.
+See `fastcda_demo_short.ipynb` for a complete working example.
