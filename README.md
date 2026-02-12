@@ -157,6 +157,8 @@ f. Show directed edges only
 graph.show_graph(directed_only=True)
 ```
 
+![Directed Edges Only](https://github.com/kelvinlim/fastcda/blob/main/assets/directed_only_example.png)
+
 ### 4. Node Styling
 
 Nodes in causal graphs can be visually styled by name pattern. Define a list of style rules, each with a `pattern` (fnmatch glob) and any Graphviz node attributes. Rules apply in order — later rules override earlier ones for the same node. 
