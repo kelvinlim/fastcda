@@ -24,11 +24,13 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '19')
+__version_info__ = ('0', '1', '21')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.21 - use raw GitHub URLs for PyPI image rendering
+0.1.20 - renamed to show_n_graphs/save_n_graphs, added graph_size and directed_only examples
 0.1.19 - added paired/multi-graph comparison with shared node layout
 0.1.18 - added nodestyles feature to allow custom node styles in the graph
 0.1.17 - add the jitter option in the run_stability_search

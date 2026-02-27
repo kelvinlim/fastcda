@@ -148,7 +148,7 @@ e. Show the causal graph
 graph.show_graph()
 ```
 
-![Example Graph](https://github.com/kelvinlim/fastcda/blob/main/assets/causal_graph_boston.png)
+![Example Graph](https://raw.githubusercontent.com/kelvinlim/fastcda/main/assets/causal_graph_boston.png)
 
 f. Show directed edges only
 
@@ -157,7 +157,7 @@ f. Show directed edges only
 graph.show_graph(directed_only=True)
 ```
 
-![Directed Edges Only](https://github.com/kelvinlim/fastcda/blob/main/assets/directed_only_example.png)
+![Directed Edges Only](https://raw.githubusercontent.com/kelvinlim/fastcda/main/assets/directed_only_example.png)
 
 ### 4. Node Styling
 
@@ -182,7 +182,7 @@ fc.show_styled_graph(graph, node_styles)
 fc.save_styled_graph(graph, node_styles, "my_graph")
 ```
 
-![Node Styling Example](https://github.com/kelvinlim/fastcda/blob/main/assets/node_styles_example.png)
+![Node Styling Example](https://raw.githubusercontent.com/kelvinlim/fastcda/main/assets/node_styles_example.png)
 
 See `fastcda_demo_short.ipynb` for a complete working example.
 
@@ -229,6 +229,6 @@ fc.save_n_graphs(
 
 | PD=1.0 | PD=2.0 | PD=3.0 |
 |--------|--------|--------|
-| ![PD=1.0](https://github.com/kelvinlim/fastcda/blob/main/assets/show_n_graphs_pd1.png) | ![PD=2.0](https://github.com/kelvinlim/fastcda/blob/main/assets/show_n_graphs_pd2.png) | ![PD=3.0](https://github.com/kelvinlim/fastcda/blob/main/assets/show_n_graphs_pd3.png) |
+| ![PD=1.0](https://raw.githubusercontent.com/kelvinlim/fastcda/main/assets/show_n_graphs_pd1.png) | ![PD=2.0](https://raw.githubusercontent.com/kelvinlim/fastcda/main/assets/show_n_graphs_pd2.png) | ![PD=3.0](https://raw.githubusercontent.com/kelvinlim/fastcda/main/assets/show_n_graphs_pd3.png) |
 
 See `fastcda_demo_short.ipynb` for the full working example.
