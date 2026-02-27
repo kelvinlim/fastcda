@@ -24,11 +24,12 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '18')
+__version_info__ = ('0', '1', '19')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.19 - added paired/multi-graph comparison with shared node layout
 0.1.18 - added nodestyles feature to allow custom node styles in the graph
 0.1.17 - add the jitter option in the run_stability_search
 0.1.16 - check for valid sem_results in run_stability_search with isinstance
@@ -1097,6 +1098,367 @@ class FastCDA():
         dg.dot.format = plot_format
         dg.dot.render(filename=plot_pathname, format=plot_format,
                       cleanup=cleanup)
+
+    # ------------------------------------------------------------------
+    # Paired / multi-graph comparison with shared node layout
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _get_all_union_nodes(graphs: list) -> list:
+        """Return sorted list of all unique node names across multiple graphs.
+
+        Args:
+            graphs: List of DgraphFlex graph objects.
+
+        Returns:
+            Sorted list of unique node name strings from all graphs.
+        """
+        all_nodes = set()
+        for dg in graphs:
+            all_nodes.update(FastCDA.get_node_names(dg))
+        return sorted(all_nodes)
+
+    @staticmethod
+    def _build_union_dot(graphs: list, res: int = 300,
+                         directed_only: bool = False):
+        """Build a graphviz.Digraph containing all nodes and edges from
+        multiple graphs.
+
+        Used internally to compute a consistent layout.  The union graph
+        is laid out with the ``dot`` engine; its node positions are later
+        extracted and applied to each individual graph.
+
+        Args:
+            graphs: List of DgraphFlex graph objects.
+            res: DPI resolution for layout computation.
+            directed_only: If True, only include directed edges
+                (``-->``, ``o->``).
+
+        Returns:
+            A ``graphviz.Digraph`` containing the union of edges from
+            all graphs.
+        """
+        from graphviz import Digraph as GvDigraph
+
+        union_dot = GvDigraph(format='png')
+        union_dot.attr(dpi=str(res), ranksep='1.5', nodesep='1.0')
+
+        # Copy node defaults from first graph
+        gvinit = graphs[0].graph.get('GENERAL', {}).get('gvinit', {})
+        if 'nodes' in gvinit:
+            union_dot.node_attr.update(gvinit['nodes'])
+
+        # Collect all edge keys from all graphs (deduplicated)
+        seen_edges = set()
+        for dg in graphs:
+            for edge_key in dg.graph['GRAPH']['edges']:
+                source, edge_type, target = edge_key.split(' ')
+                if directed_only and edge_type not in ['-->', 'o->']:
+                    continue
+                if edge_key not in seen_edges:
+                    seen_edges.add(edge_key)
+                    union_dot.edge(source, target)
+
+        # Ensure all nodes are explicitly present
+        for node in FastCDA._get_all_union_nodes(graphs):
+            union_dot.node(node)
+
+        return union_dot
+
+    @staticmethod
+    def _extract_positions(dot_obj) -> dict:
+        """Extract node positions from a graphviz Digraph by rendering to
+        plain format.
+
+        Calls ``dot_obj.pipe(format='plain')`` and parses the output to
+        extract ``(x, y)`` coordinates for each node.
+
+        Args:
+            dot_obj: A ``graphviz.Digraph`` object (already constructed
+                with nodes and edges).
+
+        Returns:
+            Dict mapping node name (str) to ``(x_str, y_str)`` coordinate
+            strings suitable for use in a Graphviz ``pos`` attribute.
+        """
+        plain_bytes = dot_obj.pipe(format='plain')
+        plain_text = (plain_bytes.decode('utf-8')
+                      if isinstance(plain_bytes, bytes) else plain_bytes)
+
+        positions = {}
+        for line in plain_text.splitlines():
+            parts = line.split()
+            if parts and parts[0] == 'node':
+                # Format: node name x y width height label ...
+                node_name = parts[1]
+                x = parts[2]
+                y = parts[3]
+                positions[node_name] = (x, y)
+
+        return positions
+
+    @staticmethod
+    def _apply_positions(dot_obj, positions: dict) -> None:
+        """Apply fixed node positions to a graphviz Digraph object.
+
+        Sets the ``pos='x,y!'`` attribute on each node so that when
+        rendered with ``engine='neato'`` and ``neato_no_op=True``, nodes
+        are pinned at the given coordinates.
+
+        Args:
+            dot_obj: A ``graphviz.Digraph`` whose nodes should be pinned.
+            positions: Dict mapping node name to ``(x_str, y_str)`` as
+                returned by ``_extract_positions()``.
+        """
+        for node_name, (x, y) in positions.items():
+            dot_obj.node(node_name, pos=f'{x},{y}!')
+
+    @staticmethod
+    def _get_connected_nodes(dg, directed_only: bool = False) -> set:
+        """Return the set of node names that have at least one edge.
+
+        Args:
+            dg: A DgraphFlex graph object.
+            directed_only: If True, only consider directed edges
+                (``-->``, ``o->``).
+
+        Returns:
+            Set of node name strings that participate in at least one
+            edge.
+        """
+        connected = set()
+        for edge_key in dg.graph['GRAPH']['edges']:
+            source, edge_type, target = edge_key.split(' ')
+            if directed_only and edge_type not in ['-->', 'o->']:
+                continue
+            connected.add(source)
+            connected.add(target)
+        return connected
+
+    @staticmethod
+    def _apply_disconnected_styling(dot_obj, all_nodes: list,
+                                    connected_nodes: set) -> None:
+        """Gray out nodes that are not connected (isolated) in a graph.
+
+        Applies a faded visual style to nodes in *all_nodes* that are
+        NOT in *connected_nodes*.
+
+        Args:
+            dot_obj: A ``graphviz.Digraph`` to modify.
+            all_nodes: Complete list of node names (from the union).
+            connected_nodes: Set of node names that have edges in this
+                graph.
+        """
+        disconnected_attrs = {
+            'fontcolor': '#BBBBBB',
+            'color': '#DDDDDD',
+            'fillcolor': '#F5F5F5',
+            'style': 'filled',
+        }
+        for node in all_nodes:
+            if node not in connected_nodes:
+                dot_obj.node(node, **disconnected_attrs)
+
+    @staticmethod
+    def _prepare_n_graphs(graphs: list, node_styles: list = None,
+                               gray_disconnected: bool = True,
+                               res: int = 300,
+                               directed_only: bool = False,
+                               labels: list = None,
+                               graph_size: str = None) -> list:
+        """Prepare multiple DgraphFlex graphs with a shared node layout.
+
+        Builds a union graph from all inputs, lays it out to compute
+        positions, then pins those positions onto each individual graph.
+
+        After this method returns, callers should render with
+        ``neato_no_op=True`` (via ``pipe()`` or ``render()``).
+
+        Args:
+            graphs: List of DgraphFlex graph objects.
+            node_styles: Optional list of pattern-based style rule dicts.
+            gray_disconnected: If True, gray out isolated nodes.
+            res: Resolution in DPI.
+            directed_only: If True, only include directed edges.
+            labels: Optional list of label strings, one per graph.
+            graph_size: Optional size string ``'width,height'`` in inches
+                (e.g. ``'10,8'``).  Forces all graphs to render at
+                exactly the same dimensions.
+
+        Returns:
+            List of prepared ``graphviz.Digraph`` objects, one per input
+            graph.
+        """
+        # Step 1: Compute shared positions from union layout
+        union_dot = FastCDA._build_union_dot(graphs, res=res,
+                                             directed_only=directed_only)
+        positions = FastCDA._extract_positions(union_dot)
+        all_nodes = FastCDA._get_all_union_nodes(graphs)
+
+        dots = []
+        for idx, dg in enumerate(graphs):
+            # Step 2: Load individual graph (fresh graphviz.Digraph)
+            dg.load_graph(res=res, directed_only=directed_only)
+
+            # Step 3: Add missing nodes from union set
+            connected = FastCDA._get_connected_nodes(
+                dg, directed_only=directed_only)
+            for node in all_nodes:
+                if node not in connected:
+                    dg.dot.node(node)
+
+            # Step 4: Apply user node_styles to ALL union nodes
+            if node_styles:
+                resolved = FastCDA.resolve_node_styles(all_nodes,
+                                                       node_styles)
+                for node_name, attrs in resolved.items():
+                    str_attrs = {k: str(v) for k, v in attrs.items()}
+                    dg.dot.node(node_name, **str_attrs)
+
+            # Step 5: Gray out disconnected nodes (after user styles)
+            if gray_disconnected:
+                FastCDA._apply_disconnected_styling(dg.dot, all_nodes,
+                                                    connected)
+
+            # Step 6: Pin node positions and switch engine
+            FastCDA._apply_positions(dg.dot, positions)
+            dg.dot.engine = 'neato'
+            dg.dot.attr(overlap='false', splines='true')
+
+            # Step 7: Force identical dimensions across all graphs
+            if graph_size:
+                dg.dot.attr(size=f'{graph_size}!', ratio='fill')
+
+            # Step 8: Add label if provided
+            if labels and idx < len(labels):
+                dg.dot.attr(label=labels[idx], labelloc='t',
+                            fontsize='14')
+
+            dots.append(dg.dot)
+
+        return dots
+
+    @staticmethod
+    def show_n_graphs(graphs: list, node_styles: list = None,
+                           gray_disconnected: bool = True,
+                           format: str = 'png', res: int = 72,
+                           directed_only: bool = False,
+                           labels: list = None,
+                           graph_size: str = None) -> list:
+        """Display multiple graphs with shared layout side-by-side in
+        Jupyter.
+
+        Computes a shared layout from the union of all graphs, then
+        renders each graph with nodes pinned at the shared positions.
+
+        Args:
+            graphs: List of DgraphFlex graph objects (>= 2).
+            node_styles: Optional list of pattern-based style rule dicts.
+            gray_disconnected: If True (default), gray out isolated
+                nodes in each graph.
+            format: Image format (default ``'png'``).
+            res: Resolution in DPI (default 72).
+            directed_only: If True, only show directed edges.
+            labels: Optional list of strings for graph titles, one per
+                graph.
+            graph_size: Optional size string ``'width,height'`` in
+                inches (e.g. ``'10,8'``).  Forces all graphs to render
+                at exactly the same dimensions.
+
+        Returns:
+            List of ``graphviz.Digraph`` objects.
+        """
+        import graphviz
+        graphviz.set_jupyter_format(format)
+
+        dots = FastCDA._prepare_n_graphs(
+            graphs,
+            node_styles=node_styles,
+            gray_disconnected=gray_disconnected,
+            res=res,
+            directed_only=directed_only,
+            labels=labels,
+            graph_size=graph_size,
+        )
+
+        # Display side-by-side in Jupyter
+        try:
+            from IPython.display import display, HTML
+            import base64
+
+            parts = []
+            for dot in dots:
+                img_bytes = dot.pipe(format=format, neato_no_op=True)
+                if format == 'svg':
+                    parts.append(img_bytes.decode('utf-8'))
+                else:
+                    b64 = base64.b64encode(img_bytes).decode('utf-8')
+                    parts.append(
+                        f'<img src="data:image/{format};base64,{b64}"/>'
+                    )
+
+            html = ('<div style="display:flex; gap:20px; '
+                    'align-items:flex-start; flex-wrap:wrap;">')
+            for part in parts:
+                html += f'<div>{part}</div>'
+            html += '</div>'
+            display(HTML(html))
+        except ImportError:
+            pass
+
+        return dots
+
+    @staticmethod
+    def save_n_graphs(graphs: list, pathnames: list,
+                           node_styles: list = None,
+                           gray_disconnected: bool = True,
+                           plot_format: str = 'png', res: int = 300,
+                           cleanup: bool = True,
+                           directed_only: bool = False,
+                           labels: list = None,
+                           graph_size: str = None):
+        """Save multiple graphs with shared layout to separate files.
+
+        Args:
+            graphs: List of DgraphFlex graph objects.
+            pathnames: List of output paths (without extension), one per
+                graph.
+            node_styles: Optional list of pattern-based style rule dicts.
+            gray_disconnected: If True (default), gray out isolated
+                nodes.
+            plot_format: Output format (default ``'png'``).
+            res: Resolution in DPI (default 300).
+            cleanup: Remove intermediate Graphviz files (default True).
+            directed_only: If True, only include directed edges.
+            labels: Optional list of strings for graph titles.
+            graph_size: Optional size string ``'width,height'`` in
+                inches (e.g. ``'10,8'``).  Forces all graphs to render
+                at exactly the same dimensions.
+
+        Raises:
+            ValueError: If ``len(graphs) != len(pathnames)``.
+        """
+        if len(graphs) != len(pathnames):
+            raise ValueError(
+                f"Number of graphs ({len(graphs)}) must match number "
+                f"of pathnames ({len(pathnames)})")
+
+        dots = FastCDA._prepare_n_graphs(
+            graphs,
+            node_styles=node_styles,
+            gray_disconnected=gray_disconnected,
+            res=res,
+            directed_only=directed_only,
+            labels=labels,
+            graph_size=graph_size,
+        )
+
+        for dot, pathname in zip(dots, pathnames):
+            with open(f"{pathname}.dot", 'w') as f:
+                f.write(dot.source)
+            dot.format = plot_format
+            dot.render(filename=pathname, format=plot_format,
+                       cleanup=cleanup, neato_no_op=True)
 
     def run_model_search(self, df, **kwargs) -> tuple:
         """

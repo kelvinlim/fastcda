@@ -1,0 +1,68 @@
+digraph {
+	node [color=black shape=oval]
+	dpi=300
+	alcohol_bev_lag -> alcohol_bev [label="0.651
+0.000" arrowhead=normal arrowtail=none color=green dir=both]
+	TIB_lag -> TST_lag [label="0.773
+0.000" arrowhead=normal arrowtail=odot color=green dir=both]
+	PANAS_PA_lag -> PHQ9_lag [label="-0.479
+0.000" arrowhead=normal arrowtail=none color=red dir=both]
+	worry_scale_lag -> TST_lag [label="0.128
+0.000" arrowhead=normal arrowtail=none color=green dir=both]
+	PHQ9_lag -> PANAS_NA_lag [label="" arrowhead=normal arrowtail=normal color=black dir=both]
+	TIB -> TST [label="" arrowhead=normal arrowtail=normal color=black dir=both]
+	TST_lag -> TST [label="0.402
+0.000" arrowhead=normal arrowtail=none color=green dir=both]
+	PANAS_PA_lag -> PANAS_PA [label="0.870
+0.000" arrowhead=normal arrowtail=none color=green dir=both]
+	PANAS_NA -> PANAS_NA_lag [label="" arrowhead=normal arrowtail=normal color=black dir=both]
+	worry_scale -> PANAS_PA [label="0.068
+0.000" arrowhead=normal arrowtail=none color=green dir=both]
+	PANAS_NA_lag -> worry_scale_lag [label="-0.423
+0.000" arrowhead=normal arrowtail=none color=red dir=both]
+	PHQ9 -> PANAS_NA_lag [label="" arrowhead=normal arrowtail=normal color=black dir=both]
+	worry_scale_lag -> worry_scale [label="0.813
+0.000" arrowhead=normal arrowtail=none color=green dir=both]
+	PHQ9 -> PANAS_NA [label="0.736
+0.000" arrowhead=normal arrowtail=none color=green dir=both]
+	worry_scale_lag -> alcohol_bev_lag [label="0.151
+0.000" arrowhead=normal arrowtail=none color=green dir=both]
+	PANAS_NA -> worry_scale [label="-0.106
+0.000" arrowhead=normal arrowtail=none color=red dir=both]
+	TIB_lag -> TIB [label="0.482
+0.000" arrowhead=normal arrowtail=odot color=green dir=both]
+	worry_scale_lag -> PANAS_PA_lag [label="0.368
+0.000" arrowhead=normal arrowtail=none color=green dir=both]
+	PANAS_PA -> PHQ9 [label="" arrowhead=normal arrowtail=normal color=black dir=both]
+	PHQ9_lag -> PHQ9 [label="0.861
+0.000" arrowhead=normal arrowtail=none color=green dir=both]
+	worry_scale -> TST [label="0.077
+0.038" arrowhead=normal arrowtail=none color=green dir=both]
+	PANAS_NA [fillcolor=lightpink style=filled]
+	PANAS_NA_lag [fillcolor=lightpink style="filled,dotted"]
+	PANAS_PA [fillcolor=lightgreen style=filled]
+	PANAS_PA_lag [fillcolor=lightgreen style="filled,dotted"]
+	PHQ9_lag [style=dotted]
+	TIB_lag [style=dotted]
+	TST_lag [style=dotted]
+	alcohol_bev [fillcolor=purple fontcolor=white shape=box style=filled]
+	alcohol_bev_lag [fillcolor=purple fontcolor=white shape=box style=filled]
+	worry_scale_lag [style=dotted]
+	alcohol_bev_lag [pos="1.1555,12.25!"]
+	alcohol_bev [pos="1.1555,10.25!"]
+	TIB_lag [pos="6.8638,4.25!"]
+	TST_lag [pos="5.5443,6.25!"]
+	PANAS_PA_lag [pos="11.405,12.25!"]
+	PHQ9_lag [pos="11.405,10.25!"]
+	worry_scale_lag [pos="6.3499,14.25!"]
+	PANAS_NA_lag [pos="8.3082,6.25!"]
+	TIB [pos="6.7388,2.25!"]
+	TST [pos="5.5443,0.25!"]
+	PANAS_PA [pos="15.225,0.25!"]
+	PANAS_NA [pos="11.433,4.25!"]
+	worry_scale [pos="11.475,2.25!"]
+	PHQ9 [pos="13.947,8.25!"]
+	overlap=false splines=true
+	ratio=fill size="10,8!"
+	fontsize=14 label="PD=1.0" labelloc=t
+}

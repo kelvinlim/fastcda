@@ -459,3 +459,326 @@ class TestNodeStyling:
         fc_no_jvm.set_node_styles(styles)
         styles.append({"pattern": "X*", "shape": "oval"})
         assert len(fc_no_jvm.node_styles) == 1
+
+
+# ---------------------------------------------------------------------------
+# Paired / multi-graph comparison tests
+# ---------------------------------------------------------------------------
+
+class TestPairedGraphs:
+    """Tests for the paired graph comparison feature.
+
+    These tests use DgraphFlex directly (no JVM required).  Layout-dependent
+    tests mock ``graphviz.Digraph.pipe`` to avoid needing Graphviz installed.
+    """
+
+    # --- _get_all_union_nodes ---
+
+    def test_union_nodes_disjoint(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["C --> D"])
+        result = FastCDA._get_all_union_nodes([dg1, dg2])
+        assert result == ["A", "B", "C", "D"]
+
+    def test_union_nodes_overlapping(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B", "B --> C"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["B --> D", "C --> E"])
+        result = FastCDA._get_all_union_nodes([dg1, dg2])
+        assert result == ["A", "B", "C", "D", "E"]
+
+    def test_union_nodes_identical(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["A --> B"])
+        result = FastCDA._get_all_union_nodes([dg1, dg2])
+        assert result == ["A", "B"]
+
+    def test_union_nodes_three_graphs(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["C --> D"])
+        dg3 = DgraphFlex()
+        dg3.add_edges(["B --> E"])
+        result = FastCDA._get_all_union_nodes([dg1, dg2, dg3])
+        assert result == ["A", "B", "C", "D", "E"]
+
+    # --- _get_connected_nodes ---
+
+    def test_connected_nodes_basic(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg = DgraphFlex()
+        dg.add_edges(["A --> B", "C o-> D"])
+        result = FastCDA._get_connected_nodes(dg)
+        assert result == {"A", "B", "C", "D"}
+
+    def test_connected_nodes_directed_only(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg = DgraphFlex()
+        dg.add_edges(["A --> B", "C o-o D"])
+        result = FastCDA._get_connected_nodes(dg, directed_only=True)
+        assert result == {"A", "B"}
+
+    def test_connected_nodes_empty_graph(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg = DgraphFlex()
+        result = FastCDA._get_connected_nodes(dg)
+        assert result == set()
+
+    # --- _apply_disconnected_styling ---
+
+    def test_disconnected_styling_applied(self):
+        import graphviz
+        from fastcda import FastCDA
+        dot = graphviz.Digraph()
+        dot.node('A')
+        dot.node('B')
+        dot.node('C')
+        all_nodes = ['A', 'B', 'C']
+        connected = {'A', 'B'}
+        FastCDA._apply_disconnected_styling(dot, all_nodes, connected)
+        source = dot.source
+        assert '#BBBBBB' in source
+
+    def test_disconnected_styling_none_disconnected(self):
+        import graphviz
+        from fastcda import FastCDA
+        dot = graphviz.Digraph()
+        dot.node('A')
+        dot.node('B')
+        all_nodes = ['A', 'B']
+        connected = {'A', 'B'}
+        source_before = dot.source
+        FastCDA._apply_disconnected_styling(dot, all_nodes, connected)
+        assert dot.source == source_before
+
+    # --- _extract_positions ---
+
+    def test_extract_positions_parses_plain(self):
+        import graphviz
+        from fastcda import FastCDA
+
+        mock_plain = (
+            "graph 1.0 3.5 2.0\n"
+            "node A 0.5 1.0 0.75 0.5 A solid oval black lightgrey\n"
+            "node B 2.0 1.0 0.75 0.5 B solid oval black lightgrey\n"
+            "edge A B ...\n"
+            "stop\n"
+        )
+        dot = graphviz.Digraph()
+        dot.node('A')
+        dot.node('B')
+        with patch.object(dot, 'pipe',
+                          return_value=mock_plain.encode('utf-8')):
+            positions = FastCDA._extract_positions(dot)
+        assert positions == {'A': ('0.5', '1.0'), 'B': ('2.0', '1.0')}
+
+    # --- _apply_positions ---
+
+    def test_apply_positions(self):
+        import graphviz
+        from fastcda import FastCDA
+        dot = graphviz.Digraph()
+        dot.node('A')
+        dot.node('B')
+        positions = {'A': ('1.5', '2.0'), 'B': ('3.0', '4.0')}
+        FastCDA._apply_positions(dot, positions)
+        source = dot.source
+        assert 'pos="1.5,2.0!"' in source
+        assert 'pos="3.0,4.0!"' in source
+
+    # --- _build_union_dot ---
+
+    def test_build_union_dot_contains_all_edges(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["C --> D"])
+        union_dot = FastCDA._build_union_dot([dg1, dg2])
+        source = union_dot.source
+        assert 'A -> B' in source
+        assert 'C -> D' in source
+
+    def test_build_union_dot_directed_only(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["C o-o D"])
+        union_dot = FastCDA._build_union_dot([dg1, dg2],
+                                              directed_only=True)
+        source = union_dot.source
+        assert 'A -> B' in source
+        # C o-o D excluded but C, D present as nodes
+        assert 'C' in source
+        assert 'D' in source
+
+    def test_build_union_dot_deduplicates(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["A --> B"])
+        union_dot = FastCDA._build_union_dot([dg1, dg2])
+        source = union_dot.source
+        assert source.count('A -> B') == 1
+
+    # --- _prepare_n_graphs (full pipeline, mocked layout) ---
+
+    def _mock_plain_for_nodes(self, nodes):
+        """Generate mock plain-format output for a set of nodes."""
+        lines = ["graph 1.0 5.0 3.0"]
+        for i, name in enumerate(sorted(nodes)):
+            x = str(0.5 + i * 1.5)
+            y = "1.0"
+            lines.append(
+                f"node {name} {x} {y} 0.75 0.5 {name} solid oval "
+                f"black lightgrey")
+        lines.append("stop")
+        return "\n".join(lines)
+
+    def test_prepare_n_graphs_gray_disconnected(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B", "B --> C"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["A --> B"])  # C is disconnected in dg2
+
+        mock_plain = self._mock_plain_for_nodes(["A", "B", "C"])
+
+        with patch('graphviz.Digraph.pipe',
+                   return_value=mock_plain.encode('utf-8')):
+            dots = FastCDA._prepare_n_graphs(
+                [dg1, dg2], gray_disconnected=True)
+
+        assert len(dots) == 2
+        # In dot2 (dg2), C should have gray styling
+        assert '#BBBBBB' in dots[1].source
+        # Both should have pinned positions
+        assert 'pos=' in dots[0].source
+        assert 'pos=' in dots[1].source
+        # Both should use neato engine
+        assert dots[0].engine == 'neato'
+        assert dots[1].engine == 'neato'
+
+    def test_prepare_n_graphs_no_gray(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B", "B --> C"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["A --> B"])
+
+        mock_plain = self._mock_plain_for_nodes(["A", "B", "C"])
+
+        with patch('graphviz.Digraph.pipe',
+                   return_value=mock_plain.encode('utf-8')):
+            dots = FastCDA._prepare_n_graphs(
+                [dg1, dg2], gray_disconnected=False)
+
+        # No gray styling should be present for C
+        assert '#BBBBBB' not in dots[1].source
+
+    def test_prepare_n_graphs_with_node_styles(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A_lag --> B"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["A_lag --> C"])
+
+        mock_plain = self._mock_plain_for_nodes(["A_lag", "B", "C"])
+        styles = [{"pattern": "*_lag", "shape": "box"}]
+
+        with patch('graphviz.Digraph.pipe',
+                   return_value=mock_plain.encode('utf-8')):
+            dots = FastCDA._prepare_n_graphs(
+                [dg1, dg2], node_styles=styles,
+                gray_disconnected=False)
+
+        assert 'shape=box' in dots[0].source
+        assert 'shape=box' in dots[1].source
+
+    def test_prepare_n_graphs_labels(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["A --> B"])
+
+        mock_plain = self._mock_plain_for_nodes(["A", "B"])
+
+        with patch('graphviz.Digraph.pipe',
+                   return_value=mock_plain.encode('utf-8')):
+            dots = FastCDA._prepare_n_graphs(
+                [dg1, dg2], labels=["Model A", "Model B"])
+
+        assert 'Model A' in dots[0].source
+        assert 'Model B' in dots[1].source
+
+    def test_prepare_three_graphs(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B", "B --> C"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["A --> C"])
+        dg3 = DgraphFlex()
+        dg3.add_edges(["B --> C"])
+
+        mock_plain = self._mock_plain_for_nodes(["A", "B", "C"])
+
+        with patch('graphviz.Digraph.pipe',
+                   return_value=mock_plain.encode('utf-8')):
+            dots = FastCDA._prepare_n_graphs(
+                [dg1, dg2, dg3], gray_disconnected=True,
+                labels=["G1", "G2", "G3"])
+
+        assert len(dots) == 3
+        # dg2 is missing B as connected, dg3 is missing A as connected
+        assert '#BBBBBB' in dots[1].source  # B disconnected in dg2
+        assert '#BBBBBB' in dots[2].source  # A disconnected in dg3
+        assert 'G1' in dots[0].source
+        assert 'G2' in dots[1].source
+        assert 'G3' in dots[2].source
+
+    # --- save_n_graphs validation ---
+
+    def test_save_n_graphs_mismatched_lengths(self):
+        from dgraph_flex import DgraphFlex
+        from fastcda import FastCDA
+
+        dg1 = DgraphFlex()
+        dg1.add_edges(["A --> B"])
+        dg2 = DgraphFlex()
+        dg2.add_edges(["A --> B"])
+
+        with pytest.raises(ValueError, match="must match"):
+            FastCDA.save_n_graphs([dg1, dg2], ["only_one"])

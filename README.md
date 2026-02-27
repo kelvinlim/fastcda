@@ -185,3 +185,50 @@ fc.save_styled_graph(graph, node_styles, "my_graph")
 ![Node Styling Example](https://github.com/kelvinlim/fastcda/blob/main/assets/node_styles_example.png)
 
 See `fastcda_demo_short.ipynb` for a complete working example.
+
+### 5. Multi-Graph Comparison
+
+Compare N causal graphs side-by-side with nodes pinned at the same positions. This is useful for examining how different search parameters affect the discovered graph. Disconnected nodes (those with no edges in a particular graph) are grayed out by default.
+
+```python
+# Run searches with different penalty discounts
+result1, graph1 = fc.run_model_search(df_lag_std, model='gfci',
+    score={'sem_bic': {'penalty_discount': 1.0}},
+    test={"fisher_z": {"alpha": .01}}, knowledge=knowledge)
+
+result2, graph2 = fc.run_model_search(df_lag_std, model='gfci',
+    score={'sem_bic': {'penalty_discount': 2.0}},
+    test={"fisher_z": {"alpha": .01}}, knowledge=knowledge)
+
+result3, graph3 = fc.run_model_search(df_lag_std, model='gfci',
+    score={'sem_bic': {'penalty_discount': 3.0}},
+    test={"fisher_z": {"alpha": .01}}, knowledge=knowledge)
+
+# Display in notebook with directed edges only
+fc.show_n_graphs(
+    [graph1, graph2, graph3],
+    node_styles=node_styles,
+    gray_disconnected=True,
+    directed_only=True,
+    labels=["PD=1.0", "PD=2.0", "PD=3.0"],
+    graph_size="10,8"
+)
+
+# Save to files
+fc.save_n_graphs(
+    [graph1, graph2, graph3],
+    ["graph_pd1", "graph_pd2", "graph_pd3"],
+    node_styles=node_styles,
+    gray_disconnected=True,
+    directed_only=True,
+    labels=["PD=1.0", "PD=2.0", "PD=3.0"],
+    graph_size="10,8",
+    res=300
+)
+```
+
+| PD=1.0 | PD=2.0 | PD=3.0 |
+|--------|--------|--------|
+| ![PD=1.0](https://github.com/kelvinlim/fastcda/blob/main/assets/show_n_graphs_pd1.png) | ![PD=2.0](https://github.com/kelvinlim/fastcda/blob/main/assets/show_n_graphs_pd2.png) | ![PD=3.0](https://github.com/kelvinlim/fastcda/blob/main/assets/show_n_graphs_pd3.png) |
+
+See `fastcda_demo_short.ipynb` for the full working example.
