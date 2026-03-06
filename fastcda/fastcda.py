@@ -24,11 +24,15 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '21')
+__version_info__ = ('0', '1', '22')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
 """
+0.1.22 - complete load_knowledge to handle forbiddirect and requiredirect pairs;
+        add TestLoadKnowledgeForbidRequired unit tests (10 tests) and
+        TestKnowledgeForbidRequired integration tests (7 tests) including
+        behavioral verification with synthetic X→Y→Z chain data
 0.1.21 - use raw GitHub URLs for PyPI image rendering
 0.1.20 - renamed to show_n_graphs/save_n_graphs, added graph_size and directed_only examples
 0.1.19 - added paired/multi-graph comparison with shared node layout
@@ -724,6 +728,29 @@ class FastCDA():
         
         self.knowledge.addToTier(self.lang.Integer(tier), self.lang.String(node))
 
+    def set_forbidden(self,node1, node2):
+        """
+        Set a forbidden edge between two nodes
+
+        Args:
+            node1 (_type_): _description_
+            node2 (_type_): _description_
+        """
+        
+        self.knowledge.setForbidden(self.lang.String(node1), self.lang.String(node2))
+
+    def set_required(self,node1, node2):
+        """
+        Set a required edge between two nodes
+
+        Args:
+            node1 (_type_): _description_
+            node2 (_type_): _description_
+        """
+        
+        self.knowledge.setRequired(self.lang.String(node1), self.lang.String(node2))
+
+
     def clearKnowledge(self):
         """
         Clears the knowledge in the search object
@@ -806,8 +833,17 @@ class FastCDA():
                     self.add_to_tier(tier, node)
                     pass
 
-        # if there are other knowledge types, load them here
-        pass
+        # check if forbiddirect is in the knowledge dict
+        if 'forbiddirect' in knowledge:
+            # iterate over the pairs of nodes and set the forbidden edges
+            for pair in knowledge['forbiddirect']:
+                self.set_forbidden(pair[0], pair[1])
+
+        # check if requiredirect is in the knowledge dict
+        if 'requiredirect' in knowledge:
+            # iterate over the pairs of nodes and set the required edges
+            for pair in knowledge['requiredirect']:
+                self.set_required(pair[0], pair[1])
 
     def extract_edges(self, text) -> list:
         """
@@ -1757,7 +1793,24 @@ class FastCDA():
                  alpha: float = 0.01,
                  penalty_discount: float = 1,
                  jitter: bool = False) -> str:
-        
+        """
+        Run the GFCI (Greedy Fast Causal Inference) algorithm on a pandas DataFrame.
+
+        GFCI is a score-based causal search that returns a Partial Ancestral Graph (PAG).
+        Any prior knowledge loaded via ``load_knowledge`` is applied automatically.
+
+        Args:
+            df (pd.DataFrame): Standardized input data (rows = observations, cols = variables).
+            alpha (float): Significance threshold for the Fisher Z independence test. Default 0.01.
+            penalty_discount (float): BIC penalty multiplier for the SEM BIC score.
+                Higher values produce sparser graphs. Default 1.0.
+            jitter (bool): If True, add small random noise to the data before conversion to
+                Tetrad's BoxDataSet (helps avoid singular matrices). Default False.
+
+        Returns:
+            str: Tetrad graph output as a string, or an empty string if a Java exception
+                 occurs (e.g. singular matrix).
+        """
         data = self.df_to_data(df, jitter)
 
         test = self.ts.test.IndTestFisherZ(data, alpha)

@@ -535,3 +535,126 @@ class TestEndToEnd:
 
         # Stricter alpha should generally produce fewer or equal edges
         assert len(result_strict['edges']) <= len(result_loose['edges'])
+
+
+# ---------------------------------------------------------------------------
+# Forbidden / required direct edge constraints
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def chain_df():
+    """
+    Synthetic 3-variable linear chain: X -> Y -> Z with strong signal.
+
+    X is independent N(0,1).
+    Y = 2*X + small noise, so X->Y is very strong.
+    Z = 2*Y + small noise, so Y->Z is very strong.
+
+    Standardized so GFCI can work with it directly.
+    """
+    from sklearn.preprocessing import StandardScaler
+    rng = np.random.default_rng(42)
+    n = 500
+    X = rng.normal(0, 1, n)
+    Y = 2.0 * X + rng.normal(0, 0.3, n)
+    Z = 2.0 * Y + rng.normal(0, 0.3, n)
+    df = pd.DataFrame({'X': X, 'Y': Y, 'Z': Z})
+    std = pd.DataFrame(
+        StandardScaler().fit_transform(df), columns=df.columns
+    )
+    return std
+
+
+class TestKnowledgeForbidRequired:
+
+    def test_set_forbidden_no_error(self, fc):
+        """set_forbidden() against live JVM must not raise."""
+        fc.clearKnowledge()
+        fc.set_forbidden('A', 'B')
+
+    def test_set_required_no_error(self, fc):
+        """set_required() against live JVM must not raise."""
+        fc.clearKnowledge()
+        fc.set_required('A', 'B')
+
+    def test_clear_knowledge_resets_constraints(self, fc):
+        """After clearKnowledge(), a subsequent search is not affected by prior constraints."""
+        fc.clearKnowledge()
+        fc.set_forbidden('alcohol_bev', 'TIB')
+        fc.set_required('alcohol_bev_lag', 'alcohol_bev')
+        # Clear and reload fresh temporal knowledge — should run without error
+        cols = ['alcohol_bev', 'TIB', 'TST', 'PANAS_PA', 'PANAS_NA', 'worry_scale', 'PHQ9']
+        knowledge = {'addtemporal': {0: [c + '_lag' for c in cols], 1: cols}}
+        fc.clearKnowledge()
+        fc.load_knowledge(knowledge)
+        # No assertion beyond not raising; confirms the reset path is exercised
+
+    def test_load_knowledge_with_forbiddirect_runs_clean(self, fc, boston_lagged, boston_knowledge):
+        """run_model_search with a forbiddirect pair completes without exception."""
+        fc.clearKnowledge()
+        knowledge = {
+            **boston_knowledge,
+            'forbiddirect': [['PANAS_PA', 'PANAS_NA']],
+        }
+        result, _ = fc.run_model_search(
+            boston_lagged,
+            model='gfci',
+            score={'sem_bic': {'penalty_discount': 1.0}},
+            test={'fisher_z': {'alpha': 0.01}},
+            knowledge=knowledge,
+            run_graph=False,
+            run_sem=False,
+        )
+        assert isinstance(result['edges'], list)
+
+    def test_load_knowledge_with_requiredirect_runs_clean(self, fc, boston_lagged, boston_knowledge):
+        """run_model_search with a requiredirect pair completes without exception."""
+        fc.clearKnowledge()
+        knowledge = {
+            **boston_knowledge,
+            'requiredirect': [['PANAS_NA_lag', 'PANAS_NA']],
+        }
+        result, _ = fc.run_model_search(
+            boston_lagged,
+            model='gfci',
+            score={'sem_bic': {'penalty_discount': 1.0}},
+            test={'fisher_z': {'alpha': 0.01}},
+            knowledge=knowledge,
+            run_graph=False,
+            run_sem=False,
+        )
+        assert isinstance(result['edges'], list)
+
+    def test_forbidden_directed_edge_absent(self, fc, chain_df):
+        """
+        With forbiddirect: [['X', 'Y']], the fully-directed edge 'X --> Y'
+        must not appear in GFCI output, even though the true structure has X->Y.
+        """
+        fc.clearKnowledge()
+        result, _ = fc.run_model_search(
+            chain_df,
+            model='gfci',
+            score={'sem_bic': {'penalty_discount': 1.0}},
+            test={'fisher_z': {'alpha': 0.01}},
+            knowledge={'forbiddirect': [['X', 'Y']]},
+            run_graph=False,
+            run_sem=False,
+        )
+        assert 'X --> Y' not in result['edges']
+
+    def test_required_edge_present(self, fc, chain_df):
+        """
+        With requiredirect: [['X', 'Z']], GFCI must include 'X --> Z'
+        even though direct X->Z is not in the true structure (Y mediates).
+        """
+        fc.clearKnowledge()
+        result, _ = fc.run_model_search(
+            chain_df,
+            model='gfci',
+            score={'sem_bic': {'penalty_discount': 1.0}},
+            test={'fisher_z': {'alpha': 0.01}},
+            knowledge={'requiredirect': [['X', 'Z']]},
+            run_graph=False,
+            run_sem=False,
+        )
+        assert 'X --> Z' in result['edges']

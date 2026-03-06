@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.22] - 2026-03-05
+
+### Fixed
+- **`load_knowledge` — `forbiddirect`/`requiredirect` support**: The `forbiddirect` branch in
+  `load_knowledge` had an incomplete loop body (no-op). Completed the loop to call
+  `self.set_forbidden(pair[0], pair[1])` for each pair, and added the missing `requiredirect`
+  block that calls `self.set_required(pair[0], pair[1])` for each pair.
+
+### Tests
+- **`TestLoadKnowledgeForbidRequired`** (10 unit tests in `tests/test_fastcda.py`): mock-based
+  tests verifying that `load_knowledge` dispatches correctly to `set_forbidden`/`set_required`
+  for all combinations of `forbiddirect`, `requiredirect`, empty lists, missing keys, and the
+  combined case with `addtemporal`.
+- **`TestKnowledgeForbidRequired`** (7 integration tests in `tests/test_integration.py`):
+  JVM-level tests including behavioral verification with a synthetic X→Y→Z linear chain dataset:
+  - `test_forbidden_directed_edge_absent`: forbids X→Y, verifies `X --> Y` absent from GFCI output
+  - `test_required_edge_present`: requires X→Z (non-natural mediated path), verifies `X --> Z`
+    present in GFCI output
+
 ## [Unreleased]
 
 ### Added
