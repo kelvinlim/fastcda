@@ -65,20 +65,23 @@ version_history = \
 """
 class FastCDA():
     
-    def __init__(self, 
+    def __init__(self,
                  verbose: int = 1,
                  min_java_version: int = 17,
-                 tetrad_jar_path: Optional[str] = None
+                 tetrad_jar_path: Optional[str] = None,
+                 tetrad_version: str = "7.6.8"
                  ):
-        
+
         """
         Initialize the FastCDA object
 
         Args:
         verbose - message verbosity, default is level 1
         min_java_version - minimum java version to accept
-        tetrad_jar_path - path to the Tetrad JAR file, if None, uses the default JAR in the package
-        
+        tetrad_jar_path - path to the Tetrad JAR file. Takes priority over tetrad_version.
+        tetrad_version - version string to select a JAR from the bundled jars directory.
+                         Defaults to "7.6.8". Ignored if tetrad_jar_path is provided.
+
         """
         
         # default verbose level is 1, 2 is more chatty
@@ -112,28 +115,32 @@ class FastCDA():
 
         # only start if not already started
         if  not jpype.isJVMStarted():
-            self.startJVM(tetrad_jar_path=tetrad_jar_path)
+            self.startJVM(tetrad_jar_path=tetrad_jar_path, tetrad_version=tetrad_version)
         else:
             if self.verbose >= 1: print("Java Virtual Machine already running...")
         pass
     
-    def startJVM(self, 
+    def startJVM(self,
                  jvm_args="-Xmx8g",
-                 tetrad_jar_path: Optional[str] = None
+                 tetrad_jar_path: Optional[str] = None,
+                 tetrad_version: str = "7.6.8"
                  ):
-        
+
         """
         Starts the Java Virtual Machine (JVM) to enable interaction with the Tetrad library.
 
         This method configures the classpath to point to either a user-specified Tetrad JAR file
         or the default JAR file bundled with the package. It then initializes the JVM using jpype
         and creates handles for commonly used Tetrad and Java packages.
-        
+
         Args:
             jvm_args (str): Arguments to pass to the JVM, e.g., for memory allocation.
                             Defaults to "-Xmx8g" (8GB maximum heap size).
             tetrad_jar_path (Optional[str]): The absolute path to a custom Tetrad JAR file.
-                                             If None, the default bundled JAR is used.
+                                             Takes priority over tetrad_version.
+            tetrad_version (str): Version string to select a JAR from the bundled jars
+                                  directory. Defaults to "7.6.8". Ignored if tetrad_jar_path
+                                  is provided.
         """
         # check if a custom JAR path is provided
         if tetrad_jar_path is not None:
@@ -143,9 +150,15 @@ class FastCDA():
         else:
             # Use the default JAR file from the package resources
             # Determine the path to the JAR file dynamically if inside package
-            jar_filename = "tetrad-gui-7.6.3-launch.jar"
+            version = tetrad_version
+            jar_filename = f"tetrad-gui-{version}-launch.jar"
             jar_resource = pkg_resources_files('fastcda.jars').joinpath(jar_filename)
             classpath = str(jar_resource) # This gives a Path object, convert to string for jpype
+            if not os.path.exists(classpath):
+                raise FileNotFoundError(
+                    f"Tetrad JAR not found: {jar_filename}. "
+                    f"Place the JAR in the fastcda/jars/ directory."
+                )
 
         if self.verbose > 1: print(f"Attempting to start JVM with classpath: {classpath}")
         res = jpype.startJVM(jvm_args, classpath=classpath)
@@ -1767,15 +1780,24 @@ class FastCDA():
 
         # FOR THE MOST PART, DONT CHANGE ANY OF THESE
         # UNLESS COMPUTATION IS TAKING TOO LONG
-        gfci = self.ts.GFci(test, score)
+        # Tetrad 7.6.3 uses GFci, 7.6.8+ uses Gfci
+        GfciClass = getattr(self.ts, 'Gfci', None) or self.ts.GFci
+        gfci = GfciClass(test, score)
         gfci.setCompleteRuleSetUsed(True)
         gfci.setDepth(-1)
-        gfci.setDoDiscriminatingPathRule(True)
         gfci.setFaithfulnessAssumed(True)
         gfci.setMaxDegree(-1)
-        gfci.setMaxPathLength(-1)
-        gfci.setPossibleMsepSearchDone(True)
         gfci.setVerbose(False)
+
+        # Methods renamed/removed between Tetrad 7.6.3 and 7.6.8
+        if hasattr(gfci, 'setDoDiscriminatingPathRule'):
+            gfci.setDoDiscriminatingPathRule(True)
+        if hasattr(gfci, 'setMaxPathLength'):
+            gfci.setMaxPathLength(-1)
+        elif hasattr(gfci, 'setMaxDiscriminatingPathLength'):
+            gfci.setMaxDiscriminatingPathLength(-1)
+        if hasattr(gfci, 'setPossibleMsepSearchDone'):
+            gfci.setPossibleMsepSearchDone(True)
         
         # set knowledge
         gfci.setKnowledge(self.knowledge)

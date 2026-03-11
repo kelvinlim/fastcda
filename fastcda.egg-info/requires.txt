@@ -1,0 +1,15 @@
+JPype1
+pandas
+python-dotenv
+PyYAML
+seaborn
+semopy
+graphviz
+tqdm
+ipykernel
+dgraph_flex
+ipywidgets
+scikit-learn
+ipython
+ipykernel
+matplotlib
