@@ -462,6 +462,88 @@ class TestNodeStyling:
 
 
 # ---------------------------------------------------------------------------
+# load_knowledge — forbiddirect / requiredirect dispatch
+# ---------------------------------------------------------------------------
+
+class TestLoadKnowledgeForbidRequired:
+
+    def test_forbiddirect_calls_set_forbidden(self, fc_no_jvm):
+        knowledge = {'forbiddirect': [['A', 'B'], ['C', 'D']]}
+        with patch.object(fc_no_jvm, 'set_forbidden') as mock_forbidden:
+            fc_no_jvm.load_knowledge(knowledge)
+        assert mock_forbidden.call_count == 2
+        mock_forbidden.assert_any_call('A', 'B')
+        mock_forbidden.assert_any_call('C', 'D')
+
+    def test_forbiddirect_single_pair(self, fc_no_jvm):
+        knowledge = {'forbiddirect': [['X', 'Y']]}
+        with patch.object(fc_no_jvm, 'set_forbidden') as mock_forbidden:
+            fc_no_jvm.load_knowledge(knowledge)
+        mock_forbidden.assert_called_once_with('X', 'Y')
+
+    def test_requiredirect_calls_set_required(self, fc_no_jvm):
+        knowledge = {'requiredirect': [['A', 'B'], ['C', 'D']]}
+        with patch.object(fc_no_jvm, 'set_required') as mock_required:
+            fc_no_jvm.load_knowledge(knowledge)
+        assert mock_required.call_count == 2
+        mock_required.assert_any_call('A', 'B')
+        mock_required.assert_any_call('C', 'D')
+
+    def test_requiredirect_single_pair(self, fc_no_jvm):
+        knowledge = {'requiredirect': [['X', 'Z']]}
+        with patch.object(fc_no_jvm, 'set_required') as mock_required:
+            fc_no_jvm.load_knowledge(knowledge)
+        mock_required.assert_called_once_with('X', 'Z')
+
+    def test_empty_forbiddirect_no_calls(self, fc_no_jvm):
+        knowledge = {'forbiddirect': []}
+        with patch.object(fc_no_jvm, 'set_forbidden') as mock_forbidden:
+            fc_no_jvm.load_knowledge(knowledge)
+        mock_forbidden.assert_not_called()
+
+    def test_empty_requiredirect_no_calls(self, fc_no_jvm):
+        knowledge = {'requiredirect': []}
+        with patch.object(fc_no_jvm, 'set_required') as mock_required:
+            fc_no_jvm.load_knowledge(knowledge)
+        mock_required.assert_not_called()
+
+    def test_missing_forbiddirect_key_no_error(self, fc_no_jvm):
+        """Dict without 'forbiddirect' key must not raise KeyError."""
+        knowledge = {'requiredirect': [['A', 'B']]}
+        with patch.object(fc_no_jvm, 'set_required'), \
+             patch.object(fc_no_jvm, 'set_forbidden') as mock_forbidden:
+            fc_no_jvm.load_knowledge(knowledge)
+        mock_forbidden.assert_not_called()
+
+    def test_missing_requiredirect_key_no_error(self, fc_no_jvm):
+        """Dict without 'requiredirect' key must not raise KeyError."""
+        knowledge = {'forbiddirect': [['A', 'B']]}
+        with patch.object(fc_no_jvm, 'set_forbidden'), \
+             patch.object(fc_no_jvm, 'set_required') as mock_required:
+            fc_no_jvm.load_knowledge(knowledge)
+        mock_required.assert_not_called()
+
+    def test_empty_knowledge_dict_no_error(self, fc_no_jvm):
+        """Completely empty dict should not raise."""
+        fc_no_jvm.load_knowledge({})  # must not raise
+
+    def test_combined_all_three_types(self, fc_no_jvm):
+        """addtemporal + forbiddirect + requiredirect all dispatch correctly."""
+        knowledge = {
+            'addtemporal': {0: ['A_lag'], 1: ['A']},
+            'forbiddirect': [['A_lag', 'B']],
+            'requiredirect': [['C', 'D']],
+        }
+        with patch.object(fc_no_jvm, 'add_to_tier') as mock_tier, \
+             patch.object(fc_no_jvm, 'set_forbidden') as mock_forbidden, \
+             patch.object(fc_no_jvm, 'set_required') as mock_required:
+            fc_no_jvm.load_knowledge(knowledge)
+        assert mock_tier.call_count == 2  # 'A_lag' and 'A'
+        mock_forbidden.assert_called_once_with('A_lag', 'B')
+        mock_required.assert_called_once_with('C', 'D')
+
+
+# ---------------------------------------------------------------------------
 # Paired / multi-graph comparison tests
 # ---------------------------------------------------------------------------
 
