@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: fastcda
-Version: 0.1.21
+Version: 0.1.23
 Summary: A package of tools for working with the tetrad java program for causal discovery from CMU
 Author-email: "Kelvin O. Lim" <lim.kelvino@gmail.com>
 Project-URL: Homepage, https://github.com/kelvinlim/fastcda
@@ -32,7 +32,9 @@ fastcda is a package for performing causal discovery analysis.
 
 The primary driver of this project is to create a package that can be installed quickly with minimal friction, support multiple platforms (Linux, Windows, macOS) and have fast execution and the ability to handle large datasets efficiently.  Consequently, the goal is to have the core causal search algorithms written in C with the other "glue" components written in Python.
 
-During the initial phase, we use jpype to call methods in the Tetrad java program from Carnegie Mellon University (https://github.com/cmu-phil/tetrad).  This will also facilitate comparison between algorithms. The default Tetrad version being used in 7.6.3.  This corresponds to causal_cmd 1.12.0.
+During the initial phase, we use jpype to call methods in the Tetrad java program from Carnegie Mellon University (https://github.com/cmu-phil/tetrad).  This will also facilitate comparison between algorithms. The default Tetrad version being used in 7.6.8.  This corresponds to causal_cmd 7.6.8.  Version 7.6.3 can also be used but
+has known problems with the FCI algorithm which have been
+fixed in 7.6.8. 
 
 The code has been designed and tested to run on Windows11, macOS Sequoia and Ubuntu 24.04.  It should run on other versions of these platforms.
 
@@ -42,7 +44,7 @@ For a simple sample usage example, try out the fastcda_demo_short.ipynb file in 
 
 ### 1. Preliminaries
 
-To use Tetrad, you will need a Java JDK 17 or higher version. We recommend JDK 21, which is the latest Long-Term Support (LTS) release of the Java SE Platform. It can be downloaded from here: https://www.oracle.com/java/technologies/downloads/#java21
+To use Tetrad, you will need a Java JDK 21 or higher version. We recommend JDK 21, which is the latest Long-Term Support (LTS) release of the Java SE Platform. It can be downloaded from here: https://www.oracle.com/java/technologies/downloads/#java21
 
 You will also need the graphviz package which can be downloaded from here: https://graphviz.org/download/
 

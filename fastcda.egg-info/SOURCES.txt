@@ -15,5 +15,6 @@ fastcda/data/boston_data_raw.csv
 fastcda/data/boston_prior.txt
 fastcda/data/fmri_48451_ptseries.csv
 fastcda/jars/tetrad-gui-7.6.3-launch.jar
+fastcda/jars/tetrad-gui-7.6.8-launch.jar
 tests/test_fastcda.py
 tests/test_integration.py

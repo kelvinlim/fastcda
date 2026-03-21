@@ -24,7 +24,7 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '22')
+__version_info__ = ('0', '1', '23')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
