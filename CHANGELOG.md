@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.24] - 2026-03-21
+
+### Changed
+- **Default Tetrad version reverted to 7.6.3**: The default `tetrad_version` parameter in
+  `FastCDA.__init__` and `start_jvm` is now `"7.6.3"` (was `"7.6.8"`).
+
 ## [0.1.22] - 2026-03-05
 
 ### Fixed

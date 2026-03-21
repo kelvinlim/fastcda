@@ -24,7 +24,7 @@ from dgraph_flex import DgraphFlex
 
 from sklearn.preprocessing import StandardScaler
 
-__version_info__ = ('0', '1', '23')
+__version_info__ = ('0', '1', '24')
 __version__ = '.'.join(__version_info__)
 
 version_history = \
@@ -73,7 +73,7 @@ class FastCDA():
                  verbose: int = 1,
                  min_java_version: int = 17,
                  tetrad_jar_path: Optional[str] = None,
-                 tetrad_version: str = "7.6.8"
+                 tetrad_version: str = "7.6.3"
                  ):
 
         """
@@ -84,7 +84,7 @@ class FastCDA():
         min_java_version - minimum java version to accept
         tetrad_jar_path - path to the Tetrad JAR file. Takes priority over tetrad_version.
         tetrad_version - version string to select a JAR from the bundled jars directory.
-                         Defaults to "7.6.8". Ignored if tetrad_jar_path is provided.
+                         Defaults to "7.6.3". Ignored if tetrad_jar_path is provided.
 
         """
         
@@ -127,7 +127,7 @@ class FastCDA():
     def startJVM(self,
                  jvm_args="-Xmx8g",
                  tetrad_jar_path: Optional[str] = None,
-                 tetrad_version: str = "7.6.8"
+                 tetrad_version: str = "7.6.3"
                  ):
 
         """
@@ -143,7 +143,7 @@ class FastCDA():
             tetrad_jar_path (Optional[str]): The absolute path to a custom Tetrad JAR file.
                                              Takes priority over tetrad_version.
             tetrad_version (str): Version string to select a JAR from the bundled jars
-                                  directory. Defaults to "7.6.8". Ignored if tetrad_jar_path
+                                  directory. Defaults to "7.6.3". Ignored if tetrad_jar_path
                                   is provided.
         """
         # check if a custom JAR path is provided
